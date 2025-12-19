@@ -57,15 +57,14 @@ func (s *OptionsScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		}
 
 		varOpt := Variable("")
+		check := optionsFrame.TCheckbutton(
+			Txt(opt.Label),
+			varOpt,
+		)
 		if checked {
 			varOpt.Set("1")
 		}
 		s.vars[opt.Value] = varOpt
-
-		check := optionsFrame.TCheckbutton(
-			Txt(opt.Label),
-			Variable(varOpt),
-		)
 		Grid(check, Row(i), Column(0), Sticky("w"), Padx("5"), Pady("3"))
 	}
 
