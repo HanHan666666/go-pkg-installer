@@ -21,6 +21,8 @@ const (
 	EventTaskComplete EventType = "task_complete"
 	// EventTaskError is emitted when a task fails.
 	EventTaskError EventType = "task_error"
+	// EventStepFailure is emitted when a step fails.
+	EventStepFailure EventType = "step_failure"
 	// EventFlowComplete is emitted when the entire flow completes.
 	EventFlowComplete EventType = "flow_complete"
 )
@@ -75,6 +77,17 @@ func (e Event) StepChangePayload() *StepChangePayload {
 	return nil
 }
 
+// StepFailurePayload returns the payload as StepFailurePayload, or nil.
+func (e Event) StepFailurePayload() *StepFailurePayload {
+	if p, ok := e.Payload.(*StepFailurePayload); ok {
+		return p
+	}
+	if p, ok := e.Payload.(StepFailurePayload); ok {
+		return &p
+	}
+	return nil
+}
+
 // ProgressPayload contains progress update data.
 type ProgressPayload struct {
 	TaskID   string
@@ -92,6 +105,11 @@ type LogPayload struct {
 type StepChangePayload struct {
 	FromStep string
 	ToStep   string
+}
+
+// StepFailurePayload contains step failure data.
+type StepFailurePayload struct {
+	StepID string
 }
 
 // TaskPayload contains task event data.
@@ -178,6 +196,16 @@ func (eb *EventBus) PublishStepChange(from, to string) {
 		Payload: StepChangePayload{
 			FromStep: from,
 			ToStep:   to,
+		},
+	})
+}
+
+// PublishStepFailure is a convenience method for publishing step failure events.
+func (eb *EventBus) PublishStepFailure(stepID string) {
+	eb.Publish(Event{
+		Type: EventStepFailure,
+		Payload: StepFailurePayload{
+			StepID: stepID,
 		},
 	})
 }

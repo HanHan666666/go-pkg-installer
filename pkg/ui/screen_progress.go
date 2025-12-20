@@ -23,6 +23,7 @@ type ProgressScreen struct {
 	taskRunner  *core.TaskRunner
 	ctx         *core.InstallContext
 	bus         *core.EventBus
+	active      bool
 }
 
 // NewProgressScreen creates a progress screen renderer.
@@ -34,6 +35,7 @@ func NewProgressScreen(step *core.StepConfig) ScreenRenderer {
 func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
 	s.ctx = ctx
 	s.bus = bus
+	s.active = true
 
 	// Title
 	titleText := s.step.Screen.Title
@@ -101,6 +103,9 @@ func (s *ProgressScreen) UpdateProgress(percent float64, status string) {
 	PostEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
+		if !s.active {
+			return
+		}
 		if s.progressVar != nil {
 			s.progressVar.Set(percent)
 		}
@@ -115,6 +120,9 @@ func (s *ProgressScreen) AddLogMessage(msg string) {
 	PostEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
+		if !s.active {
+			return
+		}
 		if s.logText == nil {
 			return
 		}
@@ -151,6 +159,10 @@ func (s *ProgressScreen) startInstallation() {
 		s.AddLogMessage(tr(s.ctx, "msg.no_tasks", "No tasks configured for installation."))
 		s.UpdateProgress(100, tr(s.ctx, "status.no_tasks", "No tasks to run"))
 		s.isComplete = true
+		s.ctx.Set("install.complete", true)
+		s.ctx.Set("install.failed", false)
+		s.ctx.Set("step.failed", false)
+		s.ctx.Set("step.failed.id", "")
 		return
 	}
 
@@ -191,13 +203,23 @@ func (s *ProgressScreen) startInstallation() {
 		err := s.taskRunner.Run()
 		if err != nil {
 			s.ctx.Set("install.complete", false)
+			s.ctx.Set("install.failed", true)
 			s.AddLogMessage("\n" + fmt.Sprintf(tr(s.ctx, "msg.install.failed", "Installation failed: %v"), err))
 			s.UpdateProgress(0, tr(s.ctx, "status.failed", "Installation Failed"))
+			s.isComplete = true
+			s.ctx.Set("step.failed", true)
+			s.ctx.Set("step.failed.id", s.step.ID)
+			if s.bus != nil {
+				s.bus.PublishStepFailure(s.step.ID)
+			}
 		} else {
 			s.ctx.Set("install.complete", true)
+			s.ctx.Set("install.failed", false)
 			s.UpdateProgress(100, tr(s.ctx, "status.complete", "Installation Complete"))
 			s.AddLogMessage("\n" + tr(s.ctx, "msg.success", "Installation completed successfully!"))
 			s.isComplete = true
+			s.ctx.Set("step.failed", false)
+			s.ctx.Set("step.failed.id", "")
 		}
 	}()
 }
@@ -212,15 +234,27 @@ func (s *ProgressScreen) Validate() error {
 
 // Collect collects data from the progress screen.
 func (s *ProgressScreen) Collect(ctx *core.InstallContext) error {
-	ctx.Set("install.complete", s.isComplete)
+	if _, ok := ctx.Get("install.complete"); !ok {
+		ctx.Set("install.complete", s.isComplete)
+	}
 	return nil
 }
 
 // Cleanup cleans up the progress screen resources.
 func (s *ProgressScreen) Cleanup() {
+	s.mu.Lock()
+	s.active = false
+	s.logText = nil
+	s.statusLabel = nil
+	s.progressVar = nil
+	s.progressBar = nil
+	runner := s.taskRunner
+	complete := s.isComplete
+	s.mu.Unlock()
+
 	// Cancel any running tasks if the screen is closed
-	if s.taskRunner != nil && !s.isComplete {
-		s.taskRunner.Cancel()
+	if runner != nil && !complete {
+		runner.Cancel()
 	}
 }
 

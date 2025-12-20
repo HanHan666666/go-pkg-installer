@@ -225,6 +225,13 @@ func (w *InstallerWindow) subscribeEvents() {
 		// Render the new step
 		w.renderCurrentStep()
 	})
+
+	// Subscribe to step failure events
+	w.bus.Subscribe(core.EventStepFailure, func(e core.Event) {
+		PostEvent(func() {
+			w.updateNavButtons()
+		}, true)
+	})
 }
 
 func (w *InstallerWindow) renderCurrentStep() {
@@ -388,6 +395,12 @@ func (w *InstallerWindow) updateNavButtons() {
 		nextScreenType = core.StripGoPrefix(nextScreenType)
 	}
 
+	if isAnyStepFailed(w.ctx) {
+		w.backBtn.Configure(State("disabled"))
+		w.nextBtn.Configure(Txt(tr(w.ctx, "button.exit", "Exit")))
+		return
+	}
+
 	if screenType == "progress" {
 		w.nextBtn.Configure(Txt(tr(w.ctx, "button.finish", "Finish")))
 	} else if screenType == "summary" || screenType == "finish" {
@@ -410,7 +423,15 @@ func (w *InstallerWindow) handleNext() {
 	screen := w.currentScreen
 	w.mu.Unlock()
 
+	step := w.workflow.CurrentStep()
+
 	// Validate current screen
+	if step != nil && isAnyStepFailed(w.ctx) {
+		Destroy(App)
+		os.Exit(1)
+		return
+	}
+
 	if screen != nil {
 		if err := screen.Validate(); err != nil {
 			MessageBox(Icon("error"), Msg(err.Error()), Title(tr(w.ctx, "dialog.validation.title", "Validation Error")))
@@ -423,9 +444,6 @@ func (w *InstallerWindow) handleNext() {
 			return
 		}
 	}
-
-	// Get current step config
-	step := w.workflow.CurrentStep()
 
 	// Check if this is the last step or summary
 	if w.workflow.IsLastStep() || w.nextEnabledStep(step.ID) == nil {
@@ -449,6 +467,10 @@ func (w *InstallerWindow) handleNext() {
 }
 
 func (w *InstallerWindow) handleBack() {
+	step := w.workflow.CurrentStep()
+	if step != nil && isAnyStepFailed(w.ctx) {
+		return
+	}
 	if !w.workflow.CanGoBack() {
 		return
 	}
@@ -503,6 +525,23 @@ func (w *InstallerWindow) nextEnabledStep(currentID string) *core.Step {
 		}
 	}
 	return nil
+}
+
+func isAnyStepFailed(ctx *core.InstallContext) bool {
+	if ctx == nil {
+		return false
+	}
+	if failed, ok := ctx.Get("step.failed"); ok {
+		if failed == true {
+			return true
+		}
+	}
+	if failed, ok := ctx.Get("install.failed"); ok {
+		if failed == true {
+			return true
+		}
+	}
+	return false
 }
 
 // after schedules a function to run after a delay.
