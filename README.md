@@ -2,26 +2,56 @@
 
 A Linux installation framework written in Go, inspired by macOS `.pkg` installers.
 
+- 中文版文档: `README.zh-CN.md`
+
 ## Overview
 
-`go-pkg-installer` is a **Go library** that provides a configurable, extensible installation framework for Linux applications. It offers:
+`go-pkg-installer` is a **Go library** that provides a configurable, extensible installation framework for Linux applications. It is designed for building GUI installers and uninstallers with a pluggable workflow engine.
 
-- **Declarative Configuration**: Define installation flows in YAML
-- **Wizard UI**: Built-in tk9-based GUI with step navigation
-- **Task System**: Modular tasks for file operations, configuration, and services
-- **Extensibility**: Register custom screens, tasks, and guards
+### Highlights
+
+- **Pluggable UI**: Built-in tk9-based wizard UI, plus support for custom screens.
+- **Pluggable Tasks**: Built-in task types and a registry for user-defined tasks.
+- **Configurable Workflow**: YAML-driven flow with guards, branching, and step routing.
+- **Uninstall Support**: The same engine supports install/uninstall/repair/upgrade actions.
+
+## Screenshot
+
+![Screenshot](docs/assets/screenshot.png)
+
+> Place your screenshot at `docs/assets/screenshot.png`.
 
 ## Quick Start
 
-### Installation
+### Install
 
 ```bash
 go get github.com/HanHan666666/go-pkg-installer
 ```
 
-### Basic Usage
+### Run the built-in GUI installer
 
-1. Create an `installer.yaml` configuration:
+```bash
+go run ./cmd/installer --config installer.yaml
+```
+
+### CLI options
+
+```
+Usage: installer [options]
+
+Options:
+  -config string    Path to installer configuration YAML file
+  -action string    Action to perform: install, uninstall (default "install")
+  -validate         Only validate the configuration file
+  -headless         Run in headless/CLI mode (no GUI)
+  -verbose          Enable verbose logging
+  -version          Show version information
+```
+
+## Configuration
+
+### Minimal example
 
 ```yaml
 product:
@@ -36,7 +66,7 @@ flows:
         screen:
           type: welcome
           content: "Welcome to My Application installer!"
-      
+
       - id: license
         title: "License"
         screen:
@@ -45,13 +75,18 @@ flows:
         guards:
           - type: mustAccept
             field: license_accepted
-      
+
       - id: destination
         title: "Install Location"
         screen:
           type: pathPicker
           bind: install_dir
-      
+
+      - id: summary
+        title: "Ready to Install"
+        screen:
+          type: summary
+
       - id: progress
         title: "Installing"
         screen:
@@ -65,120 +100,66 @@ flows:
             format: json
             content:
               installed: true
-      
+
       - id: finish
         title: "Complete"
         screen:
           type: finish
 ```
 
-2. Run the installer:
+### Supported actions
 
-```bash
-go run ./cmd/installer --config installer.yaml
-```
-
-### Command Line Options
-
-```
-Usage: installer [options]
-
-Options:
-  -config string    Path to installer configuration YAML file
-  -action string    Action to perform: install, uninstall (default "install")
-  -validate         Only validate the configuration file
-  -headless         Run in headless/CLI mode (no GUI)
-  -verbose          Enable verbose logging
-  -version          Show version information
-```
+- `install`: Standard installation flow
+- `uninstall`: Removal flow for installed files
+- `upgrade`: Upgrade flow (optional)
+- `repair`: Repair/restore flow (optional)
 
 ## Architecture
 
-### Modules
+### Core modules
 
-- **Core**: Workflow engine, context management, task runner, event bus
-- **Builtin**: Built-in screen types, tasks, and guards
-- **Schema**: YAML/JSON schema validation
-- **UI**: tk9-based graphical user interface
+- **core**: Workflow engine, context, task runner, event bus
+- **builtin**: Built-in tasks, guards, and screen defaults
+- **schema**: YAML/JSON schema validation
+- **ui**: tk9-based GUI renderer
 
-### Screen Types
+### Built-in screen types
 
 | Type | Description |
 |------|-------------|
-| `welcome` | Welcome/introduction screen with rich text |
-| `license` | License agreement with acceptance checkbox |
+| `welcome` | Welcome screen with rich text |
+| `license` | License with scroll-to-end and accept checkbox |
 | `pathPicker` | Directory selection for install location |
-| `options` | Multiple choice options |
-| `summary` | Pre-install summary of selections |
-| `progress` | Progress bar with task execution |
+| `options` | Multiple-choice options |
+| `summary` | Pre-install summary |
+| `progress` | Progress and live logs |
 | `finish` | Completion screen |
 
-### Built-in Tasks
+### Built-in tasks
 
 | Task | Description |
 |------|-------------|
-| `shell` | Execute shell scripts |
+| `shell` | Execute shell commands |
 | `copy` | Copy files/directories |
-| `symlink` | Create symbolic links |
-| `writeConfig` | Write configuration files |
+| `symlink` | Create symlinks |
+| `writeConfig` | Write config files |
 | `removePath` | Remove files/directories |
-| `desktop_entry` | Create .desktop files |
-| `download` | Download files from URLs |
-| `unpack` | Extract archives (tar, zip) |
+| `desktop_entry` | Create .desktop entries |
+| `download` | Download files |
+| `unpack` | Extract archives (tar/zip) |
 
-### Guards
+### Built-in guards
 
 | Guard | Description |
 |-------|-------------|
-| `mustAccept` | Require checkbox acceptance |
+| `mustAccept` | Require acceptance checkbox |
 | `diskSpace` | Check available disk space |
-| `fieldNotEmpty` | Ensure field has value |
+| `fieldNotEmpty` | Validate required fields |
 | `expression` | Custom expression evaluation |
-
-## Library Usage
-
-```go
-package main
-
-import (
-    "github.com/HanHan666666/go-pkg-installer/pkg/core"
-    "github.com/HanHan666666/go-pkg-installer/pkg/builtin"
-    "github.com/HanHan666666/go-pkg-installer/pkg/ui"
-)
-
-func main() {
-    // Register built-in tasks and guards
-    builtin.RegisterAll()
-    
-    // Create context and workflow
-    ctx := core.NewInstallContext()
-    eventBus := core.NewEventBus()
-    workflow := core.NewWorkflow(ctx, eventBus)
-    
-    // Add custom flow programmatically
-    flow := &core.Flow{
-        ID:    "install",
-        Entry: "welcome",
-        Steps: []*core.Step{
-            {ID: "welcome", Title: "Welcome"},
-            {ID: "finish", Title: "Complete"},
-        },
-    }
-    workflow.AddFlow(flow)
-    workflow.SelectFlow("install")
-    
-    // Create and run UI
-    win := ui.NewInstallerWindow(ctx, workflow, eventBus)
-    win.OnComplete(func() {
-        // Handle completion
-    })
-    win.Run()
-}
-```
 
 ## Extending
 
-### Custom Task
+### Custom task
 
 ```go
 func init() {
@@ -201,13 +182,21 @@ func (t *MyTask) Validate(ctx *core.InstallContext) error {
 }
 ```
 
-### Custom Guard
+### Custom guard
 
 ```go
 func init() {
     core.Guards.MustRegister("myGuard", func(params map[string]any, ctx *core.InstallContext) (core.Guard, error) {
         return &MyGuard{params: params}, nil
     })
+}
+```
+
+### Custom screen
+
+```go
+func init() {
+    ui.RegisterScreenRenderer("myScreen", NewMyScreen)
 }
 ```
 
