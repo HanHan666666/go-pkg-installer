@@ -24,7 +24,6 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Get product info
 	productName := ctx.RenderOrDefault("product.name", "Application")
 	// version := ctx.RenderOrDefault("product.version", "")
-	displayName := trText(ctx, productName)
 
 	// Title
 	titleText := s.step.Screen.Title
