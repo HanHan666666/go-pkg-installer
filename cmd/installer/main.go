@@ -96,6 +96,7 @@ func main() {
 	// Create installation context
 	ctx := core.NewInstallContext()
 	defer ctx.CloseLogFile()
+	ctx.Set("config.dir", filepath.Dir(absConfigPath))
 
 	// Set product information
 	if cfg.Product != nil {

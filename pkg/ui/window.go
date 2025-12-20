@@ -38,10 +38,19 @@ type InstallerWindow struct {
 	// Screen registry
 	screenRenderers map[string]ScreenRendererFactory
 
+	// Sidebar logo
+	logoImage *Img
+	logoPath  string
+
 	// Callbacks
 	onComplete func()
 	onCancel   func()
 }
+
+const (
+	sidebarWidth    = 180
+	sidebarLogoSize = sidebarWidth
+)
 
 // ScreenRenderer interface for rendering different screen types.
 type ScreenRenderer interface {
@@ -137,7 +146,7 @@ func (w *InstallerWindow) setupWindow() {
 	Pack(w.mainFrame, Fill("both"), Expand(true))
 
 	// Create sidebar frame (for steps/branding)
-	w.sidebarFrame = w.mainFrame.TFrame(Width(190), Padding("10"), Style("Sidebar.TFrame"))
+	w.sidebarFrame = w.mainFrame.TFrame(Width(sidebarWidth), Padding("10"), Style("Sidebar.TFrame"))
 	Pack(w.sidebarFrame, Side("left"), Fill("y"), Padx("6"))
 
 	// Create content wrapper frame (content + nav)
@@ -294,6 +303,32 @@ func (w *InstallerWindow) renderSidebar() {
 			Style(style),
 		)
 		Pack(label, Side("top"), Fill("x"), Padx("5"), Pady("2"))
+	}
+
+	spacer := w.sidebarFrame.TFrame(Style("Sidebar.TFrame"))
+	Pack(spacer, Fill("both"), Expand(true))
+
+	logoPath := resolveAssetPath(w.ctx, w.ctx.RenderOrDefault("product.logo", ""))
+	if logoPath != "" {
+		if w.logoImage == nil || w.logoPath != logoPath {
+			w.logoImage = loadLogoImage(logoPath)
+			if w.logoImage != nil {
+				w.logoPath = logoPath
+			} else {
+				w.logoPath = ""
+			}
+		}
+		if w.logoImage != nil {
+			logoCanvas := w.sidebarFrame.Canvas(
+				Width(sidebarLogoSize),
+				Height(sidebarLogoSize),
+				Background(currentPalette.sidebar),
+				Borderwidth(0),
+				Highlightthickness(0),
+			)
+			Pack(logoCanvas, Side("bottom"), Pady("6"))
+			logoCanvas.CreateImage(sidebarLogoSize/2, sidebarLogoSize/2, Image(w.logoImage), Anchor("center"))
+		}
 	}
 }
 
