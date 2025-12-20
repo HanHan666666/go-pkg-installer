@@ -30,6 +30,11 @@ func NewLicenseScreen(step *core.StepConfig) ScreenRenderer {
 // Render creates the license screen UI.
 func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
 	s.ctx = ctx
+	body := parent.TFrame()
+	Pack(body, Fill("both"), Expand(true))
+
+	row := 0
+
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
@@ -40,19 +45,21 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	}
 	titleText = ctx.Render(titleText)
 
-	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
-	Pack(title, Pady("10"), Side("top"))
+	title := body.TLabel(Txt(titleText), Font("TkHeadingFont"))
+	Grid(title, Row(row), Column(0), Sticky("w"), Pady("10"))
+	row++
 
 	// Description
 	if desc := s.step.Screen.Description; desc != "" {
 		desc = ctx.Render(desc)
-		descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
-		Pack(descLabel, Pady("5"), Side("top"))
+		descLabel := body.TLabel(Txt(desc), Wraplength("600"))
+		Grid(descLabel, Row(row), Column(0), Sticky("w"), Pady("5"))
+		row++
 	}
 
 	// License text frame with scrollbar
-	textFrame := parent.TFrame()
-	Pack(textFrame, Fill("both"), Expand(true), Pady("10"))
+	textFrame := body.TFrame()
+	Grid(textFrame, Row(row), Column(0), Sticky("nsew"), Pady("10"))
 
 	// Create text widget with scrollbar
 	scrollbar := textFrame.TScrollbar()
@@ -64,10 +71,14 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		Wrap("word"),
 		Yscrollcommand(func(e *Event) { e.ScrollSet(scrollbar) }),
 	)
+	applyTextStyle(text)
 	scrollbar.Configure(Command(func(e *Event) { e.Yview(text) }))
 	Pack(text, Side("left"), Fill("both"), Expand(true))
 	s.text = text
 	s.requireScroll = s.step.Screen.RequireScrollToEnd
+
+	GridRowConfigure(body, row, Weight(1))
+	row++
 
 	// Load license content
 	licenseText := ""
@@ -100,8 +111,8 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	text.Configure(State("disabled"))
 
 	// Acceptance checkbox
-	acceptFrame := parent.TFrame()
-	Pack(acceptFrame, Pady("10"), Side("bottom"))
+	acceptFrame := body.TFrame()
+	Grid(acceptFrame, Row(row), Column(0), Sticky("w"), Pady("10"))
 
 	s.acceptVar = Variable("")
 	checkbox := acceptFrame.TCheckbutton(
@@ -112,6 +123,8 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		}),
 	)
 	Pack(checkbox, Side("left"))
+
+	GridColumnConfigure(body, 0, Weight(1))
 
 	return nil
 }

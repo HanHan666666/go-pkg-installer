@@ -83,6 +83,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 		Yscrollcommand(func(e *Event) { e.ScrollSet(scrollbar) }),
 		State("disabled"),
 	)
+	applyTextStyle(s.logText)
 	scrollbar.Configure(Command(func(e *Event) { e.Yview(s.logText) }))
 	Pack(s.logText, Side("left"), Fill("both"), Expand(true))
 

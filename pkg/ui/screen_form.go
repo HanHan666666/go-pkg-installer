@@ -106,6 +106,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 			browseBtn := pathFrame.TButton(
 				Txt("..."),
 				Width(3),
+				Style("Secondary.TButton"),
 				Command(func() {
 					dir := ChooseDirectory(
 						Title("Select Directory"),
@@ -132,6 +133,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 			browseBtn := fileFrame.TButton(
 				Txt("..."),
 				Width(3),
+				Style("Secondary.TButton"),
 				Command(func() {
 					files := GetOpenFile(
 						Title("Select File"),

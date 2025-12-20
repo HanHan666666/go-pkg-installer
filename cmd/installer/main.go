@@ -101,6 +101,9 @@ func main() {
 	if cfg.Product != nil {
 		ctx.Set("product.name", cfg.Product.Name)
 		ctx.Set("product.logo", cfg.Product.Logo)
+		if cfg.Product.Theme != nil && cfg.Product.Theme.PrimaryColor != "" {
+			ctx.Set("theme.primaryColor", cfg.Product.Theme.PrimaryColor)
+		}
 	}
 
 	// Set meta

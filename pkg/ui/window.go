@@ -125,34 +125,40 @@ func (w *InstallerWindow) setupWindow() {
 		productName = "Installer"
 	}
 
+	applyTheme(w.ctx)
+
 	// Configure main window title and size
 	App.WmTitle(fmt.Sprintf("%v", productName))
 	WmGeometry(App, "700x500")
 	WmMinSize(App, 700, 500)
 
 	// Create main container frame
-	w.mainFrame = TFrame(Padding("10"))
+	w.mainFrame = TFrame(Padding("12"), Style("Main.TFrame"))
 	Pack(w.mainFrame, Fill("both"), Expand(true))
 
 	// Create sidebar frame (for steps/branding)
-	w.sidebarFrame = w.mainFrame.TFrame(Width(180), Padding("5"))
-	Pack(w.sidebarFrame, Side("left"), Fill("y"), Padx("5"))
+	w.sidebarFrame = w.mainFrame.TFrame(Width(190), Padding("10"), Style("Sidebar.TFrame"))
+	Pack(w.sidebarFrame, Side("left"), Fill("y"), Padx("6"))
 
 	// Create content wrapper frame (content + nav)
-	contentWrapper := w.mainFrame.TFrame()
+	contentWrapper := w.mainFrame.TFrame(Style("Content.TFrame"))
 	Pack(contentWrapper, Side("right"), Fill("both"), Expand(true))
 
 	// Create content frame (for screen content)
-	w.contentFrame = contentWrapper.TFrame(Padding("5"))
-	Pack(w.contentFrame, Fill("both"), Expand(true), Side("top"))
+	w.contentFrame = contentWrapper.TFrame(Padding("12"), Style("Content.TFrame"))
 
 	// Create separator
 	separator := contentWrapper.TSeparator()
-	Pack(separator, Fill("x"), Pady("10"))
 
 	// Create navigation frame
-	w.navFrame = contentWrapper.TFrame()
-	Pack(w.navFrame, Fill("x"), Side("bottom"))
+	w.navFrame = contentWrapper.TFrame(Style("Nav.TFrame"))
+	Grid(w.contentFrame, Row(0), Column(0), Sticky("nsew"))
+	Grid(separator, Row(1), Column(0), Sticky("ew"), Pady("8"))
+	Grid(w.navFrame, Row(2), Column(0), Sticky("ew"))
+	GridRowConfigure(contentWrapper, 0, Weight(1))
+	GridRowConfigure(contentWrapper, 1, Weight(0))
+	GridRowConfigure(contentWrapper, 2, Weight(0))
+	GridColumnConfigure(contentWrapper, 0, Weight(1))
 
 	// Create navigation buttons
 	w.cancelBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.cancel", "Cancel")), Command(w.handleCancel))
@@ -163,6 +169,10 @@ func (w *InstallerWindow) setupWindow() {
 
 	w.backBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.back", "Go Back")), Command(w.handleBack))
 	Pack(w.backBtn, Side("right"), Padx("5"))
+
+	w.cancelBtn.Configure(Style("Secondary.TButton"))
+	w.backBtn.Configure(Style("Secondary.TButton"))
+	w.nextBtn.Configure(Style("Primary.TButton"))
 }
 
 func (w *InstallerWindow) subscribeEvents() {
@@ -252,23 +262,37 @@ func (w *InstallerWindow) renderSidebar() {
 	}
 
 	productName := w.ctx.RenderOrDefault("product.name", "Installer")
-	title := w.sidebarFrame.TLabel(Txt(productName), Font("TkHeadingFont"), Anchor("w"))
+	title := w.sidebarFrame.TLabel(
+		Txt(productName),
+		Font("TkHeadingFont"),
+		Anchor("w"),
+		Style("SidebarTitle.TLabel"),
+	)
 	Pack(title, Side("top"), Fill("x"), Pady("5"))
 
 	steps := w.workflow.Steps()
 	for _, step := range steps {
 		status := w.workflow.StepStatus(step.ID)
-		prefix := "[ ]"
+		prefix := "○"
+		style := "SidebarStep.TLabel"
 		switch status {
 		case core.StepCurrent:
-			prefix = "[>]"
+			prefix = "▶"
+			style = "SidebarActive.TLabel"
 		case core.StepCompleted:
-			prefix = "[x]"
+			prefix = "✓"
+			style = "SidebarDone.TLabel"
 		case core.StepDisabled:
-			prefix = "[-]"
+			prefix = "✗"
+			style = "SidebarDisabled.TLabel"
 		}
 		text := fmt.Sprintf("%s %s", prefix, step.Title)
-		label := w.sidebarFrame.TLabel(Txt(text), Anchor("w"), Wraplength("160"))
+		label := w.sidebarFrame.TLabel(
+			Txt(text),
+			Anchor("w"),
+			Wraplength("160"),
+			Style(style),
+		)
 		Pack(label, Side("top"), Fill("x"), Padx("5"), Pady("2"))
 	}
 }

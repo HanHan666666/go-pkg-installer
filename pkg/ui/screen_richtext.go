@@ -50,6 +50,7 @@ func (s *RichtextScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 		Wrap("word"),
 		Yscrollcommand(func(e *Event) { e.ScrollSet(scrollbar) }),
 	)
+	applyTextStyle(text)
 	scrollbar.Configure(Command(func(e *Event) { e.Yview(text) }))
 	Pack(text, Side("left"), Fill("both"), Expand(true))
 

@@ -96,6 +96,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	// Browse button
 	browseBtn := dirFrame.TButton(
 		Txt(tr(ctx, "button.browse", "Browse...")),
+		Style("Secondary.TButton"),
 		Command(func() {
 			dir := ChooseDirectory(
 				Title(tr(ctx, "title.directory", "Select Installation Directory")),
