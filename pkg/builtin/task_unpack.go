@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // UnpackTask extracts an archive file.

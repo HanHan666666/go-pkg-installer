@@ -25,9 +25,9 @@ flows:
           type: welcome
           content: |
             Welcome to Demo Application Installer!
-            
+
             This wizard will guide you through the installation of Demo Application.
-            
+
             Click Next to continue.
 
       - id: license
@@ -99,9 +99,9 @@ flows:
             content: |
               Demo Application
               ================
-              
+
               Thank you for installing Demo Application!
-              
+
               Installation Directory: ${install_dir}
 
           - type: shell
@@ -137,7 +137,7 @@ flows:
           type: welcome
           content: |
             This wizard will remove Demo Application from your system.
-            
+
             Click Next to continue.
 
       - id: uninstall_confirm

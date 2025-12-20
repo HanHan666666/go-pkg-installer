@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/anthropics/go-pkg-installer/pkg/builtin"
-	"github.com/anthropics/go-pkg-installer/pkg/core"
-	"github.com/anthropics/go-pkg-installer/pkg/schema"
+	"github.com/HanHan666666/go-pkg-installer/pkg/builtin"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/schema"
 )
 
 func init() {

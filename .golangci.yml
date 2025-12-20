@@ -26,7 +26,7 @@ linters-settings:
   gofmt:
     simplify: true
   goimports:
-    local-prefixes: github.com/anthropics/go-pkg-installer
+    local-prefixes: github.com/HanHan666666/go-pkg-installer
   misspell:
     locale: US
   gocritic:

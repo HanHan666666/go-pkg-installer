@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 func createTestTarGz(t *testing.T, dir string) string {

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v3"
 )

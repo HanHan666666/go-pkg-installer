@@ -1,4 +1,4 @@
-module github.com/anthropics/go-pkg-installer
+module github.com/HanHan666666/go-pkg-installer
 
 go 1.24.0
 

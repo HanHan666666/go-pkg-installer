@@ -3,7 +3,7 @@ package ui
 import (
 	. "modernc.org/tk9.0"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // RichtextScreen renders a rich text/informational screen.

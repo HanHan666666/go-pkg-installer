@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // Note: Full UI testing would require a display and running Tk.

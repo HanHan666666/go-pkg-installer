@@ -5,7 +5,7 @@ import (
 
 	. "modernc.org/tk9.0"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // WelcomeScreen renders a welcome screen with product info.

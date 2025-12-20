@@ -8,7 +8,7 @@ import (
 
 	. "modernc.org/tk9.0"
 
-	"github.com/anthropics/go-pkg-installer/pkg/core"
+	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // LicenseScreen renders a license agreement screen.

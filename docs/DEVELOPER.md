@@ -7,7 +7,7 @@ This guide explains how to use the Go Package Installer framework to build custo
 ### Installation
 
 ```bash
-go get github.com/anthropics/go-pkg-installer
+go get github.com/HanHan666666/go-pkg-installer
 ```
 
 ### Quick Start
@@ -24,10 +24,10 @@ go get github.com/anthropics/go-pkg-installer
 package main
 
 import (
-    "github.com/anthropics/go-pkg-installer/pkg/builtin"
-    "github.com/anthropics/go-pkg-installer/pkg/core"
-    "github.com/anthropics/go-pkg-installer/pkg/schema"
-    "github.com/anthropics/go-pkg-installer/pkg/ui"
+    "github.com/HanHan666666/go-pkg-installer/pkg/builtin"
+    "github.com/HanHan666666/go-pkg-installer/pkg/core"
+    "github.com/HanHan666666/go-pkg-installer/pkg/schema"
+    "github.com/HanHan666666/go-pkg-installer/pkg/ui"
 )
 
 func main() {
@@ -150,7 +150,7 @@ type Task interface {
 package custom
 
 import (
-    "github.com/anthropics/go-pkg-installer/pkg/core"
+    "github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 // DatabaseTask creates a database
@@ -249,7 +249,7 @@ import (
     "errors"
     "os/exec"
     
-    "github.com/anthropics/go-pkg-installer/pkg/core"
+    "github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
 
 func init() {
@@ -318,8 +318,8 @@ type Screen interface {
 package custom
 
 import (
-    "github.com/anthropics/go-pkg-installer/pkg/core"
-    "github.com/anthropics/go-pkg-installer/pkg/ui"
+    "github.com/HanHan666666/go-pkg-installer/pkg/core"
+    "github.com/HanHan666666/go-pkg-installer/pkg/ui"
     tk "modernc.org/tk9.0"
 )
 

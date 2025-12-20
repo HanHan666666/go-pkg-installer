@@ -16,7 +16,7 @@ A Linux installation framework written in Go, inspired by macOS `.pkg` installer
 ### Installation
 
 ```bash
-go get github.com/anthropics/go-pkg-installer
+go get github.com/HanHan666666/go-pkg-installer
 ```
 
 ### Basic Usage
@@ -141,9 +141,9 @@ Options:
 package main
 
 import (
-    "github.com/anthropics/go-pkg-installer/pkg/core"
-    "github.com/anthropics/go-pkg-installer/pkg/builtin"
-    "github.com/anthropics/go-pkg-installer/pkg/ui"
+    "github.com/HanHan666666/go-pkg-installer/pkg/core"
+    "github.com/HanHan666666/go-pkg-installer/pkg/builtin"
+    "github.com/HanHan666666/go-pkg-installer/pkg/ui"
 )
 
 func main() {
