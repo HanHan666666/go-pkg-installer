@@ -8,10 +8,10 @@ This document describes the YAML configuration format for installers.
 product:
   name: "Application Name"
   version: "1.0.0"
-  publisher: "Company Name"
+  vendor: "Company Name"
   icon: "path/to/icon.png"  # optional
 
-variables:
+meta:
   install_dir: "/opt/myapp"
   app_name: "MyApp"
 
@@ -31,21 +31,21 @@ flows:
 |-------|------|----------|-------------|
 | `name` | string | Yes | Display name of the product |
 | `version` | string | Yes | Version string |
-| `publisher` | string | No | Company or author name |
+| `vendor` | string | No | Company or author name |
 | `icon` | string | No | Path to application icon |
 
-## Variables Section
+## Meta Section
 
-Define variables that can be used throughout the configuration with `${variable_name}` syntax:
+Define metadata that can be used throughout the configuration with `${meta.key}` or `${key}` syntax:
 
 ```yaml
-variables:
+meta:
   install_dir: "/opt/myapp"
   bin_dir: "${install_dir}/bin"
   config_dir: "${install_dir}/config"
 ```
 
-Variables are also set during installation:
+Meta values are also set during installation:
 - Form fields store their values
 - Tasks can modify context variables
 
@@ -85,10 +85,10 @@ steps:
       content: "Welcome message here"
     guards:
       - type: mustAccept
-        field: license_accepted
+        field: license.accepted
     tasks:
       - type: shell
-        command: echo "Hello"
+        script: echo "Hello"
 ```
 
 ### Step Properties
@@ -116,7 +116,7 @@ screen:
 ```yaml
 screen:
   type: license
-  text: |
+  content: |
     MIT License
     
     Copyright (c) 2025...
@@ -126,7 +126,7 @@ Or load from file:
 ```yaml
 screen:
   type: license
-  file: "LICENSE.txt"
+  source: "LICENSE.txt"
 ```
 
 ### Form Screen
@@ -135,18 +135,18 @@ screen:
 screen:
   type: form
   fields:
-    - id: install_dir
+    - variable: install_dir
       label: "Installation Directory"
       type: directory
       default: "/opt/myapp"
       required: true
     
-    - id: create_shortcut
+    - variable: create_shortcut
       label: "Create desktop shortcut"
       type: checkbox
       default: true
     
-    - id: port
+    - variable: port
       label: "Port Number"
       type: text
       default: "8080"
@@ -170,7 +170,7 @@ screen:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `id` | string | Variable name to store value |
+| `variable` | string | Variable name to store value |
 | `label` | string | Display label |
 | `type` | string | Field type |
 | `default` | any | Default value |
@@ -198,6 +198,7 @@ screen:
     - label: "Components"
       value: "Core, Plugins, Documentation"
 ```
+
 
 ### Finish Screen
 

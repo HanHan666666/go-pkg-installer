@@ -16,10 +16,11 @@ import (
 // WriteConfigTask writes a configuration file.
 type WriteConfigTask struct {
 	core.BaseTask
-	Destination string
-	Format      string // json, yaml, or text
-	Content     any
-	Mode        os.FileMode
+	Destination      string
+	Format           string // json, yaml, or text
+	Content          any
+	Mode             os.FileMode
+	RequirePrivilege bool
 
 	// For rollback
 	wroteFile    string
@@ -31,8 +32,15 @@ type WriteConfigTask struct {
 func RegisterWriteConfigTask() {
 	core.Tasks.Register("writeConfig", func(config map[string]any, ctx *core.InstallContext) (core.Task, error) {
 		mode := os.FileMode(0644)
-		if modeVal := getConfigInt(config, "mode", 0); modeVal != 0 {
+		if modeVal := parseFileMode(config["mode"]); modeVal != 0 {
 			mode = os.FileMode(modeVal)
+		}
+
+		content := config["content"]
+		if content == nil {
+			if tmpl, ok := config["template"].(string); ok && tmpl != "" {
+				content = tmpl
+			}
 		}
 
 		task := &WriteConfigTask{
@@ -41,10 +49,11 @@ func RegisterWriteConfigTask() {
 				TaskType: "writeConfig",
 				Config:   config,
 			},
-			Destination: ctx.Render(getConfigString(config, "destination")),
-			Format:      getConfigString(config, "format"),
-			Content:     config["content"],
-			Mode:        mode,
+			Destination:      ctx.Render(getConfigStringAny(config, "path", "destination")),
+			Format:           getConfigString(config, "format"),
+			Content:          content,
+			Mode:             mode,
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -81,6 +90,10 @@ func (t *WriteConfigTask) Validate() error {
 
 // Execute writes the configuration file.
 func (t *WriteConfigTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Writing config to %s (format: %s)", t.Destination, t.Format))
 
 	// Ensure parent directory exists

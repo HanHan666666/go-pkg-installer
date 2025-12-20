@@ -13,9 +13,11 @@ import (
 // RemovePathTask removes a file or directory.
 type RemovePathTask struct {
 	core.BaseTask
-	Path      string
-	Recursive bool
-	Force     bool // Ignore errors if path doesn't exist
+	Path             string
+	Recursive        bool
+	Force            bool // Ignore errors if path doesn't exist
+	UserData         bool
+	RequirePrivilege bool
 
 	// For rollback - we don't support full rollback for remove
 	// but we track what was removed for logging
@@ -31,9 +33,11 @@ func RegisterRemovePathTask() {
 				TaskType: "removePath",
 				Config:   config,
 			},
-			Path:      ctx.Render(getConfigString(config, "path")),
-			Recursive: getConfigBool(config, "recursive"),
-			Force:     getConfigBool(config, "force"),
+			Path:             ctx.Render(getConfigString(config, "path")),
+			Recursive:        getConfigBool(config, "recursive"),
+			Force:            getConfigBool(config, "force"),
+			UserData:         getConfigBool(config, "userData"),
+			RequirePrivilege: getConfigBoolDefault(config, "requirePrivilege", false),
 		}
 
 		if task.TaskID == "" {
@@ -54,6 +58,19 @@ func (t *RemovePathTask) Validate() error {
 
 // Execute removes the file or directory.
 func (t *RemovePathTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if t.UserData {
+		if keep, ok := ctx.Get("uninstall.keepUserData"); ok {
+			if keepBool, ok := keep.(bool); ok && keepBool {
+				ctx.AddLog(core.LogInfo, fmt.Sprintf("Skipping user data removal: %s", t.Path))
+				return nil
+			}
+		}
+	}
+
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Removing: %s", t.Path))
 
 	// Check if path exists

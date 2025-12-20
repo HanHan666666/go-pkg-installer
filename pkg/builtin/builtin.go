@@ -11,4 +11,10 @@ func RegisterAll() {
 	RegisterWriteConfigTask()
 	RegisterDesktopEntryTask()
 	RegisterRemovePathTask()
+	RegisterSystemdServiceTask()
+	RegisterDbusServiceTask()
+	RegisterPermissionTask()
+	RegisterNetScriptTask()
+	RegisterRemoveDesktopEntryTask()
+	RegisterRollbackTask()
 }

@@ -28,7 +28,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = "Select Installation Directory"
+		titleText = tr(ctx, "title.directory", "Select Installation Directory")
 	}
 	titleText = ctx.Render(titleText)
 
@@ -38,7 +38,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	// Description
 	desc := s.step.Screen.Description
 	if desc == "" {
-		desc = "Choose the folder where you want to install the application."
+		desc = tr(ctx, "desc.directory", "Choose the folder where you want to install the application.")
 	}
 	desc = ctx.Render(desc)
 
@@ -53,7 +53,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	dirFrame := parent.TFrame()
 	Pack(dirFrame, Fill("x"), Pady("20"))
 
-	label := dirFrame.TLabel(Txt("Installation Directory:"))
+	label := dirFrame.TLabel(Txt(tr(ctx, "label.install.dir", "Installation Directory:")))
 	Pack(label, Side("left"), Padx("5"))
 
 	// Get variable name and default value
@@ -95,10 +95,10 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 
 	// Browse button
 	browseBtn := dirFrame.TButton(
-		Txt("Browse..."),
+		Txt(tr(ctx, "button.browse", "Browse...")),
 		Command(func() {
 			dir := ChooseDirectory(
-				Title("Select Installation Directory"),
+				Title(tr(ctx, "title.directory", "Select Installation Directory")),
 				Initialdir(s.pathEntry.Textvariable()),
 			)
 			if dir != "" {
@@ -115,7 +115,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	// Show disk space info if available
 	requiredSpace := ctx.RenderOrDefault("install.required_space", "")
 	if requiredSpace != "" {
-		spaceLabel := infoFrame.TLabel(Txt("Required space: " + requiredSpace))
+		spaceLabel := infoFrame.TLabel(Txt(tr(ctx, "label.required.space", "Required space: ") + requiredSpace))
 		Pack(spaceLabel, Side("left"))
 	}
 

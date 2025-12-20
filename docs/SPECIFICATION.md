@@ -282,10 +282,10 @@
   * Registry 注册时必须提供对应的 Schema 或 Validator
   * 运行时装配为合并后的 Schema（内置 + 扩展）
   * 未注册的 `go:` 类型视为校验失败（Fail Early）
-* 卸载目标配置：
+* 卸载目标由 uninstall flow 内任务显式声明：
 
-  * `uninstallTargets.systemPaths`：始终删除
-  * `uninstallTargets.userDataPaths`：仅在不保留用户数据时删除
+  * `removePath.userData: true` 表示用户数据路径（保留用户数据时跳过）
+  * 其他路径在卸载时始终删除
 
 ### 7.2 Step 配置示例（示意）
 

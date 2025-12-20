@@ -1,11 +1,46 @@
 // Package core provides the configuration types for the installer.
 package core
 
+import "gopkg.in/yaml.v3"
+
 // BranchConfig defines conditional branching logic.
 type BranchConfig struct {
 	Condition string            `yaml:"condition" json:"condition"`                 // Expression to evaluate
 	Branches  map[string]string `yaml:"branches" json:"branches"`                   // value -> step ID
 	Default   string            `yaml:"default,omitempty" json:"default,omitempty"` // Default step if no match
+}
+
+// UnmarshalYAML supports both condition/branches/default and legacy when/then/else forms.
+func (b *BranchConfig) UnmarshalYAML(value *yaml.Node) error {
+	var raw struct {
+		Condition string            `yaml:"condition"`
+		Branches  map[string]string `yaml:"branches"`
+		Default   string            `yaml:"default"`
+		When      string            `yaml:"when"`
+		Then      string            `yaml:"then"`
+		Else      string            `yaml:"else"`
+	}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	if raw.Condition != "" || len(raw.Branches) > 0 || raw.Default != "" {
+		b.Condition = raw.Condition
+		b.Branches = raw.Branches
+		b.Default = raw.Default
+		return nil
+	}
+
+	if raw.When == "" && raw.Then == "" && raw.Else == "" {
+		return nil
+	}
+
+	b.Condition = raw.When
+	if raw.Then != "" {
+		b.Branches = map[string]string{"true": raw.Then}
+	}
+	b.Default = raw.Else
+	return nil
 }
 
 // TaskConfig represents a task configuration from YAML.
@@ -116,25 +151,17 @@ type InstallConfig struct {
 
 // UninstallConfig represents uninstallation configuration.
 type UninstallConfig struct {
-	Targets *UninstallTargetsConfig `yaml:"targets,omitempty" json:"targets,omitempty"`
-	Tasks   []TaskConfig            `yaml:"tasks,omitempty" json:"tasks,omitempty"`
-}
-
-// UninstallTargetsConfig represents paths to remove during uninstall.
-type UninstallTargetsConfig struct {
-	SystemPaths   []string `yaml:"systemPaths,omitempty" json:"systemPaths,omitempty"`
-	UserDataPaths []string `yaml:"userDataPaths,omitempty" json:"userDataPaths,omitempty"`
+	Tasks []TaskConfig `yaml:"tasks,omitempty" json:"tasks,omitempty"`
 }
 
 // Config represents the complete installer configuration.
 type Config struct {
-	Schema           string                  `yaml:"$schema,omitempty" json:"$schema,omitempty"`
-	Product          *ProductConfig          `yaml:"product" json:"product"`
-	Meta             map[string]any          `yaml:"meta,omitempty" json:"meta,omitempty"`
-	Sources          *SourcesConfig          `yaml:"sources,omitempty" json:"sources,omitempty"`
-	Flow             *FlowConfig             `yaml:"flow,omitempty" json:"flow,omitempty"`
-	Flows            map[string]*FlowConfig  `yaml:"flows,omitempty" json:"flows,omitempty"`
-	Install          *InstallConfig          `yaml:"install,omitempty" json:"install,omitempty"`
-	Uninstall        *UninstallConfig        `yaml:"uninstall,omitempty" json:"uninstall,omitempty"`
-	UninstallTargets *UninstallTargetsConfig `yaml:"uninstallTargets,omitempty" json:"uninstallTargets,omitempty"`
+	Schema    string                 `yaml:"$schema,omitempty" json:"$schema,omitempty"`
+	Product   *ProductConfig         `yaml:"product" json:"product"`
+	Meta      map[string]any         `yaml:"meta,omitempty" json:"meta,omitempty"`
+	Sources   *SourcesConfig         `yaml:"sources,omitempty" json:"sources,omitempty"`
+	Flow      *FlowConfig            `yaml:"flow,omitempty" json:"flow,omitempty"`
+	Flows     map[string]*FlowConfig `yaml:"flows,omitempty" json:"flows,omitempty"`
+	Install   *InstallConfig         `yaml:"install,omitempty" json:"install,omitempty"`
+	Uninstall *UninstallConfig       `yaml:"uninstall,omitempty" json:"uninstall,omitempty"`
 }

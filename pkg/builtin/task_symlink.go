@@ -13,9 +13,10 @@ import (
 // SymlinkTask creates a symbolic link.
 type SymlinkTask struct {
 	core.BaseTask
-	Target    string
-	LinkPath  string
-	Overwrite bool
+	Target           string
+	LinkPath         string
+	Overwrite        bool
+	RequirePrivilege bool
 
 	// For rollback
 	createdLink string
@@ -31,9 +32,10 @@ func RegisterSymlinkTask() {
 				TaskType: "symlink",
 				Config:   config,
 			},
-			Target:    ctx.Render(getConfigString(config, "target")),
-			LinkPath:  ctx.Render(getConfigString(config, "link")),
-			Overwrite: getConfigBool(config, "overwrite"),
+			Target:           ctx.Render(getConfigString(config, "target")),
+			LinkPath:         ctx.Render(getConfigString(config, "link")),
+			Overwrite:        getConfigBool(config, "overwrite"),
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -57,6 +59,10 @@ func (t *SymlinkTask) Validate() error {
 
 // Execute creates the symbolic link.
 func (t *SymlinkTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Creating symlink %s -> %s", t.LinkPath, t.Target))
 
 	// Ensure parent directory exists

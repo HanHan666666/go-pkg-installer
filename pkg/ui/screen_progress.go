@@ -38,7 +38,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = "Installing..."
+		titleText = tr(ctx, "title.progress", "Installing...")
 	}
 	titleText = ctx.Render(titleText)
 
@@ -56,7 +56,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	Pack(descLabel, Pady("10"), Side("top"))
 
 	// Status label
-	s.statusLabel = parent.TLabel(Txt("Preparing..."))
+	s.statusLabel = parent.TLabel(Txt(tr(ctx, "status.prepare", "Preparing...")))
 	Pack(s.statusLabel, Pady("5"), Side("top"))
 
 	// Progress bar
@@ -140,8 +140,8 @@ func (s *ProgressScreen) startInstallation() {
 
 	// If still no tasks, show warning
 	if len(tasks) == 0 {
-		s.AddLogMessage("No tasks configured for installation.")
-		s.UpdateProgress(100, "No tasks to run")
+		s.AddLogMessage(tr(s.ctx, "msg.no_tasks", "No tasks configured for installation."))
+		s.UpdateProgress(100, tr(s.ctx, "status.no_tasks", "No tasks to run"))
 		s.isComplete = true
 		return
 	}
@@ -182,11 +182,13 @@ func (s *ProgressScreen) startInstallation() {
 	go func() {
 		err := s.taskRunner.Run()
 		if err != nil {
+			s.ctx.Set("install.complete", false)
 			s.AddLogMessage(fmt.Sprintf("\nInstallation failed: %v", err))
-			s.UpdateProgress(0, "Installation Failed")
+			s.UpdateProgress(0, tr(s.ctx, "status.failed", "Installation Failed"))
 		} else {
-			s.UpdateProgress(100, "Installation Complete")
-			s.AddLogMessage("\n✓ Installation completed successfully!")
+			s.ctx.Set("install.complete", true)
+			s.UpdateProgress(100, tr(s.ctx, "status.complete", "Installation Complete"))
+			s.AddLogMessage("\n" + tr(s.ctx, "msg.success", "✓ Installation completed successfully!"))
 			s.isComplete = true
 		}
 	}()

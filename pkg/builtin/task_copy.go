@@ -14,10 +14,11 @@ import (
 // CopyTask copies files or directories.
 type CopyTask struct {
 	core.BaseTask
-	Source      string
-	Destination string
-	Mode        os.FileMode
-	Overwrite   bool
+	Source           string
+	Destination      string
+	Mode             os.FileMode
+	Overwrite        bool
+	RequirePrivilege bool
 
 	// For rollback
 	copiedFiles []string
@@ -38,10 +39,11 @@ func RegisterCopyTask() {
 				TaskType: "copy",
 				Config:   config,
 			},
-			Source:      ctx.Render(getConfigString(config, "source")),
-			Destination: ctx.Render(getConfigString(config, "destination")),
-			Mode:        mode,
-			Overwrite:   getConfigBool(config, "overwrite"),
+			Source:           ctx.Render(getConfigStringAny(config, "from", "source")),
+			Destination:      ctx.Render(getConfigStringAny(config, "to", "destination")),
+			Mode:             mode,
+			Overwrite:        getConfigBool(config, "overwrite"),
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -65,6 +67,10 @@ func (t *CopyTask) Validate() error {
 
 // Execute copies the file or directory.
 func (t *CopyTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Copying %s to %s", t.Source, t.Destination))
 
 	info, err := os.Stat(t.Source)

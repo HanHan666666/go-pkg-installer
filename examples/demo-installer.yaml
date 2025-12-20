@@ -158,10 +158,3 @@ flows:
         title: "Complete"
         screen:
           type: finish
-
-# Uninstall targets for tracking installed files
-uninstallTargets:
-  systemPaths:
-    - "${install_dir}"
-  userDataPaths:
-    - "${HOME}/.config/demo-app"

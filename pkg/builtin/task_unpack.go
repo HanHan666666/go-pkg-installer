@@ -18,9 +18,10 @@ import (
 // UnpackTask extracts an archive file.
 type UnpackTask struct {
 	core.BaseTask
-	Source      string
-	Destination string
-	StripPrefix int
+	Source           string
+	Destination      string
+	StripPrefix      int
+	RequirePrivilege bool
 
 	// For rollback
 	createdFiles []string
@@ -36,9 +37,10 @@ func RegisterUnpackTask() {
 				TaskType: "unpack",
 				Config:   config,
 			},
-			Source:      ctx.Render(getConfigString(config, "source")),
-			Destination: ctx.Render(getConfigString(config, "destination")),
-			StripPrefix: getConfigInt(config, "strip_prefix", 0),
+			Source:           ctx.Render(getConfigStringAny(config, "from", "source")),
+			Destination:      ctx.Render(getConfigStringAny(config, "to", "destination")),
+			StripPrefix:      getConfigIntAny(config, 0, "stripPrefix", "strip_prefix"),
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -62,6 +64,10 @@ func (t *UnpackTask) Validate() error {
 
 // Execute extracts the archive.
 func (t *UnpackTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Unpacking %s to %s", t.Source, t.Destination))
 
 	// Ensure destination directory exists

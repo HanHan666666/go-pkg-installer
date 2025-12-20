@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 
 	. "modernc.org/tk9.0"
 
@@ -27,7 +28,7 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = fmt.Sprintf("Welcome to %s", productName)
+		titleText = fmt.Sprintf(tr(ctx, "title.welcome", "Welcome to %s"), productName)
 	}
 	titleText = ctx.Render(titleText)
 
@@ -47,6 +48,23 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	descLabel := parent.TLabel(Txt(description), Wraplength("600"))
 	Pack(descLabel, Pady("10"), Side("top"))
 
+	// Optional content block
+	content := ""
+	if s.step.Screen.Content != "" {
+		content = ctx.Render(s.step.Screen.Content)
+	} else if s.step.Screen.ContentFile != "" {
+		filePath := ctx.Render(s.step.Screen.ContentFile)
+		if data, err := os.ReadFile(filePath); err == nil {
+			content = string(data)
+		} else {
+			content = "Content would be loaded from: " + filePath
+		}
+	}
+	if content != "" {
+		contentLabel := parent.TLabel(Txt(content), Wraplength("600"))
+		Pack(contentLabel, Pady("5"), Side("top"))
+	}
+
 	// Optional banner or logo (if configured)
 	if bannerPath := s.step.Screen.BannerPath; bannerPath != "" {
 		bannerPath = ctx.Render(bannerPath)
@@ -58,7 +76,7 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	Pack(spacer, Fill("both"), Expand(true))
 
 	// Footer message
-	footer := parent.TLabel(Txt("Click 'Continue' to proceed with the installation."))
+	footer := parent.TLabel(Txt(tr(ctx, "footer.welcome", "Click 'Continue' to proceed with the installation.")))
 	Pack(footer, Pady("20"), Side("bottom"))
 
 	return nil

@@ -3,6 +3,9 @@ package core
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -27,6 +30,13 @@ type InstallContext struct {
 
 	// Meta contains arbitrary metadata from config
 	Meta map[string]any
+
+	// Event bus for log propagation
+	bus *EventBus
+
+	// Log output file
+	logFile *os.File
+	logPath string
 }
 
 // EnvInfo contains detected environment information.
@@ -99,6 +109,59 @@ func NewInstallContext() *InstallContext {
 			Logs:   make([]LogEntry, 0),
 			Errors: make([]error, 0),
 		},
+	}
+}
+
+// SetEventBus attaches an EventBus to the context for log propagation.
+func (c *InstallContext) SetEventBus(bus *EventBus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.bus = bus
+}
+
+// SetLogFile configures a log file path for persistent logs.
+func (c *InstallContext) SetLogFile(path string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.logFile != nil {
+		_ = c.logFile.Close()
+		c.logFile = nil
+	}
+
+	if path == "" {
+		c.logPath = ""
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+
+	c.logFile = file
+	c.logPath = path
+	return nil
+}
+
+// LogPath returns the active log file path, if any.
+func (c *InstallContext) LogPath() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.logPath
+}
+
+// CloseLogFile closes the log file if configured.
+func (c *InstallContext) CloseLogFile() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.logFile != nil {
+		_ = c.logFile.Close()
+		c.logFile = nil
 	}
 }
 
@@ -230,13 +293,27 @@ func (c *InstallContext) RenderOrDefault(path string, defaultVal string) string 
 // AddLog adds a log entry to the runtime state.
 func (c *InstallContext) AddLog(level LogLevel, message string) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	bus := c.bus
+	writer := c.logFile
+	c.mu.Unlock()
 
-	c.Runtime.Logs = append(c.Runtime.Logs, LogEntry{
+	entry := LogEntry{
 		Level:   level,
 		Message: message,
 		Time:    currentTimeMillis(),
-	})
+	}
+
+	c.mu.Lock()
+	c.Runtime.Logs = append(c.Runtime.Logs, entry)
+	c.mu.Unlock()
+
+	if bus != nil {
+		bus.PublishLog(level, message)
+	}
+
+	if writer != nil {
+		writeLogEntry(writer, entry)
+	}
 }
 
 // AddError adds an error to the runtime state.
@@ -285,6 +362,17 @@ func (c *InstallContext) getEnvField(path string) (any, bool) {
 		return c.Env.InstallDir, true
 	}
 	return nil, false
+}
+
+func writeLogEntry(w io.Writer, entry LogEntry) {
+	level := "INFO"
+	switch entry.Level {
+	case LogWarn:
+		level = "WARN"
+	case LogError:
+		level = "ERROR"
+	}
+	_, _ = fmt.Fprintf(w, "[%s] %s\n", level, entry.Message)
 }
 
 // getNestedValue retrieves a value from a nested map using dot notation.

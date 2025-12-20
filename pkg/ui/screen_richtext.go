@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os"
+
 	. "modernc.org/tk9.0"
 
 	"github.com/HanHan666666/go-pkg-installer/pkg/core"
@@ -21,7 +23,7 @@ func (s *RichtextScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = "Information"
+		titleText = tr(ctx, "title.info", "Information")
 	}
 	titleText = ctx.Render(titleText)
 
@@ -57,8 +59,11 @@ func (s *RichtextScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 		content = ctx.Render(s.step.Screen.Content)
 	} else if s.step.Screen.ContentFile != "" {
 		filePath := ctx.Render(s.step.Screen.ContentFile)
-		// In production, load from file
-		content = "Content would be loaded from: " + filePath
+		if data, err := os.ReadFile(filePath); err == nil {
+			content = string(data)
+		} else {
+			content = "Content would be loaded from: " + filePath
+		}
 	}
 
 	// Insert content (supporting basic formatting)

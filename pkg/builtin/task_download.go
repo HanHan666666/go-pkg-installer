@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/HanHan666666/go-pkg-installer/pkg/core"
@@ -18,10 +19,12 @@ import (
 // DownloadTask downloads a file from a URL.
 type DownloadTask struct {
 	core.BaseTask
-	URL         string
-	Destination string
-	SHA256      string
-	Timeout     time.Duration
+	URL              string
+	Destination      string
+	SHA256           string
+	Timeout          time.Duration
+	Headers          map[string]string
+	RequirePrivilege bool
 
 	// For rollback
 	downloadedFile string
@@ -30,20 +33,35 @@ type DownloadTask struct {
 // RegisterDownloadTask registers the download task factory.
 func RegisterDownloadTask() {
 	core.Tasks.Register("download", func(config map[string]any, ctx *core.InstallContext) (core.Task, error) {
+		headers := make(map[string]string)
+		if headerMap, ok := config["headers"].(map[string]any); ok {
+			for k, v := range headerMap {
+				if s, ok := v.(string); ok {
+					headers[k] = ctx.Render(s)
+				}
+			}
+		}
+
 		task := &DownloadTask{
 			BaseTask: core.BaseTask{
 				TaskID:   getConfigString(config, "id"),
 				TaskType: "download",
 				Config:   config,
 			},
-			URL:         ctx.Render(getConfigString(config, "url")),
-			Destination: ctx.Render(getConfigString(config, "destination")),
-			SHA256:      getConfigString(config, "sha256"),
-			Timeout:     time.Duration(getConfigInt(config, "timeout", 300)) * time.Second,
+			URL:              ctx.Render(getConfigString(config, "url")),
+			Destination:      ctx.Render(getConfigStringAny(config, "to", "destination")),
+			SHA256:           getConfigString(config, "sha256"),
+			Timeout:          time.Duration(getConfigIntAny(config, 300, "timeoutSec", "timeout")) * time.Second,
+			Headers:          headers,
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
 			task.TaskID = fmt.Sprintf("download-%s", filepath.Base(task.URL))
+		}
+
+		if task.Destination == "" && task.URL != "" {
+			task.Destination = filepath.Join(os.TempDir(), filepath.Base(task.URL))
 		}
 
 		return task, nil
@@ -63,6 +81,10 @@ func (t *DownloadTask) Validate() error {
 
 // Execute downloads the file.
 func (t *DownloadTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Downloading %s to %s", t.URL, t.Destination))
 
 	// Ensure destination directory exists
@@ -77,7 +99,15 @@ func (t *DownloadTask) Execute(ctx *core.InstallContext, bus *core.EventBus) err
 	}
 
 	// Start download
-	resp, err := client.Get(t.URL)
+	req, err := http.NewRequest(http.MethodGet, t.URL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	for k, v := range t.Headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to download: %w", err)
 	}
@@ -187,6 +217,15 @@ func getConfigString(config map[string]any, key string) string {
 	return ""
 }
 
+func getConfigStringAny(config map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if v, ok := config[key].(string); ok && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 func getConfigInt(config map[string]any, key string, defaultVal int) int {
 	switch v := config[key].(type) {
 	case int:
@@ -200,11 +239,36 @@ func getConfigInt(config map[string]any, key string, defaultVal int) int {
 	}
 }
 
+func getConfigIntAny(config map[string]any, defaultVal int, keys ...string) int {
+	for _, key := range keys {
+		if _, ok := config[key]; ok {
+			return getConfigInt(config, key, defaultVal)
+		}
+	}
+	return defaultVal
+}
+
 func getConfigBool(config map[string]any, key string) bool {
 	if v, ok := config[key].(bool); ok {
 		return v
 	}
 	return false
+}
+
+func getConfigBoolAny(config map[string]any, keys ...string) bool {
+	for _, key := range keys {
+		if _, ok := config[key]; ok {
+			return getConfigBool(config, key)
+		}
+	}
+	return false
+}
+
+func getConfigBoolDefault(config map[string]any, key string, defaultVal bool) bool {
+	if _, ok := config[key]; ok {
+		return getConfigBool(config, key)
+	}
+	return defaultVal
 }
 
 func getConfigStringSlice(config map[string]any, key string) []string {
@@ -222,4 +286,23 @@ func getConfigStringSlice(config map[string]any, key string) []string {
 	default:
 		return nil
 	}
+}
+
+func parseFileMode(value any) int {
+	switch v := value.(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	case string:
+		if v == "" {
+			return 0
+		}
+		if parsed, err := strconv.ParseInt(v, 8, 32); err == nil {
+			return int(parsed)
+		}
+	}
+	return 0
 }

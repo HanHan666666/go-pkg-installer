@@ -21,9 +21,6 @@
         ]
       }
     },
-    "uninstallTargets": {
-      "$ref": "#/$defs/uninstallTargets"
-    },
     "flows": {
       "type": "object",
       "minProperties": 1,
@@ -59,26 +56,6 @@
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
             }
-          }
-        }
-      }
-    },
-    "uninstallTargets": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "systemPaths": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "userDataPaths": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
           }
         }
       }
@@ -154,19 +131,56 @@
       }
     },
     "branch": {
-      "type": "object",
-      "additionalProperties": true,
-      "properties": {
-        "when": {
-          "type": "string"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "condition",
+            "branches"
+          ],
+          "properties": {
+            "condition": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branches": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "default": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         },
-        "then": {
-          "type": "string"
-        },
-        "else": {
-          "type": "string"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "when",
+            "then"
+          ],
+          "properties": {
+            "when": {
+              "type": "string",
+              "minLength": 1
+            },
+            "then": {
+              "type": "string",
+              "minLength": 1
+            },
+            "else": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
-      }
+      ]
     },
     "screen": {
       "oneOf": [
@@ -174,8 +188,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "content"
+            "type"
           ],
           "properties": {
             "type": {
@@ -184,15 +197,30 @@
             "content": {
               "type": "string",
               "minLength": 1
+            },
+            "contentFile": {
+              "type": "string",
+              "minLength": 1
             }
-          }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "contentFile"
+              ]
+            }
+          ]
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "content"
+            "type"
           ],
           "properties": {
             "type": {
@@ -201,15 +229,30 @@
             "content": {
               "type": "string",
               "minLength": 1
+            },
+            "contentFile": {
+              "type": "string",
+              "minLength": 1
             }
-          }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "contentFile"
+              ]
+            }
+          ]
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "source"
+            "type"
           ],
           "properties": {
             "type": {
@@ -219,10 +262,35 @@
               "type": "string",
               "minLength": 1
             },
+            "content": {
+              "type": "string",
+              "minLength": 1
+            },
+            "contentFile": {
+              "type": "string",
+              "minLength": 1
+            },
             "requireScrollToEnd": {
               "type": "boolean"
             }
-          }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "source"
+              ]
+            },
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "contentFile"
+              ]
+            }
+          ]
         },
         {
           "type": "object",
@@ -424,7 +492,14 @@
             "to": {
               "type": "string"
             },
+            "destination": {
+              "type": "string"
+            },
             "timeoutSec": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "timeout": {
               "type": "integer",
               "minimum": 1
             },
@@ -447,8 +522,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "to"
+            "type"
           ],
           "properties": {
             "type": {
@@ -457,7 +531,13 @@
             "from": {
               "type": "string"
             },
+            "source": {
+              "type": "string"
+            },
             "to": {
+              "type": "string"
+            },
+            "destination": {
               "type": "string"
             },
             "format": {
@@ -468,18 +548,54 @@
                 "zip"
               ]
             },
+            "stripPrefix": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "strip_prefix": {
+              "type": "integer",
+              "minimum": 0
+            },
             "requirePrivilege": {
               "type": "boolean"
             }
-          }
+          },
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "source"
+                  ]
+                }
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "destination"
+                  ]
+                }
+              ]
+            }
+          ]
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "from",
-            "to"
+            "type"
           ],
           "properties": {
             "type": {
@@ -488,7 +604,13 @@
             "from": {
               "type": "string"
             },
+            "source": {
+              "type": "string"
+            },
             "to": {
+              "type": "string"
+            },
+            "destination": {
               "type": "string"
             },
             "recursive": {
@@ -497,7 +619,37 @@
             "requirePrivilege": {
               "type": "boolean"
             }
-          }
+          },
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "source"
+                  ]
+                }
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "destination"
+                  ]
+                }
+              ]
+            }
+          ]
         },
         {
           "type": "object",
@@ -526,8 +678,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "path"
+            "type"
           ],
           "properties": {
             "type": {
@@ -536,19 +687,62 @@
             "path": {
               "type": "string"
             },
-            "content": {
+            "destination": {
               "type": "string"
+            },
+            "content": {
+              "type": [
+                "string",
+                "object",
+                "array"
+              ]
             },
             "template": {
               "type": "string"
             },
-            "mode": {
+            "format": {
               "type": "string"
+            },
+            "mode": {
+              "type": [
+                "string",
+                "integer"
+              ]
             },
             "requirePrivilege": {
               "type": "boolean"
             }
-          }
+          },
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "destination"
+                  ]
+                }
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "required": [
+                    "template"
+                  ]
+                }
+              ]
+            }
+          ]
         },
         {
           "type": "object",
@@ -560,7 +754,10 @@
           ],
           "properties": {
             "type": {
-              "const": "createDesktopEntry"
+              "enum": [
+                "desktopEntry",
+                "createDesktopEntry"
+              ]
             },
             "name": {
               "type": "string"
@@ -571,11 +768,26 @@
             "icon": {
               "type": "string"
             },
+            "comment": {
+              "type": "string"
+            },
+            "entryType": {
+              "type": "string"
+            },
+            "entry_type": {
+              "type": "string"
+            },
             "categories": {
               "type": "array",
               "items": {
                 "type": "string"
               }
+            },
+            "destination": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
             },
             "requirePrivilege": {
               "type": "boolean"
@@ -609,6 +821,9 @@
                 "disable"
               ]
             },
+            "user": {
+              "type": "boolean"
+            },
             "requirePrivilege": {
               "type": "boolean"
             }
@@ -637,6 +852,9 @@
                 "restart"
               ]
             },
+            "user": {
+              "type": "boolean"
+            },
             "requirePrivilege": {
               "type": "boolean"
             }
@@ -657,7 +875,10 @@
               "type": "string"
             },
             "mode": {
-              "type": "string"
+              "type": [
+                "string",
+                "integer"
+              ]
             },
             "owner": {
               "type": "string"
@@ -666,6 +887,9 @@
               "type": "string"
             },
             "recursive": {
+              "type": "boolean"
+            },
+            "userData": {
               "type": "boolean"
             },
             "requirePrivilege": {
@@ -697,8 +921,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "type",
-            "script"
+            "type"
           ],
           "properties": {
             "type": {
@@ -708,7 +931,21 @@
               "type": "string",
               "minLength": 1
             },
+            "command": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "timeoutSec": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "timeout": {
               "type": "integer",
               "minimum": 1
             },
@@ -721,10 +958,31 @@
             "workDir": {
               "type": "string"
             },
+            "workdir": {
+              "type": "string"
+            },
+            "rollbackCommand": {
+              "type": "string"
+            },
+            "rollback_command": {
+              "type": "string"
+            },
             "requirePrivilege": {
               "type": "boolean"
             }
-          }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "script"
+              ]
+            },
+            {
+              "required": [
+                "command"
+              ]
+            }
+          ]
         },
         {
           "type": "object",
@@ -749,6 +1007,10 @@
               "type": "integer",
               "minimum": 1
             },
+            "timeout": {
+              "type": "integer",
+              "minimum": 1
+            },
             "env": {
               "type": "object",
               "additionalProperties": {
@@ -756,6 +1018,9 @@
               }
             },
             "workDir": {
+              "type": "string"
+            },
+            "workdir": {
               "type": "string"
             },
             "requirePrivilege": {
@@ -797,6 +1062,9 @@
               "const": "removeDesktopEntry"
             },
             "name": {
+              "type": "string"
+            },
+            "path": {
               "type": "string"
             },
             "requirePrivilege": {

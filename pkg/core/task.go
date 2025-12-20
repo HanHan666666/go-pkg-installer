@@ -191,9 +191,13 @@ func (r *TaskRunner) AddTasks(tasks []Task) {
 // QueueConfig adds a task from a TaskConfig to the run queue.
 // This method uses the task registry to create the task.
 func (r *TaskRunner) QueueConfig(config TaskConfig) error {
-	factory, ok := Tasks.Get(config.Type)
+	taskType := config.Type
+	factory, ok := Tasks.Get(taskType)
+	if !ok && IsGoExtension(taskType) {
+		factory, ok = Tasks.Get(StripGoPrefix(taskType))
+	}
 	if !ok {
-		return fmt.Errorf("unknown task type: %s", config.Type)
+		return fmt.Errorf("unknown task type: %s", taskType)
 	}
 
 	// Build params map including inline params
@@ -201,7 +205,7 @@ func (r *TaskRunner) QueueConfig(config TaskConfig) error {
 	for k, v := range config.Params {
 		params[k] = v
 	}
-	params["type"] = config.Type
+	params["type"] = taskType
 	if config.ID != "" {
 		params["id"] = config.ID
 	}
@@ -254,6 +258,7 @@ func (r *TaskRunner) Run() error {
 		r.mu.Unlock()
 
 		if result.State == TaskFailed {
+			r.ctx.AddError(result.Error)
 			switch r.failurePolicy {
 			case FailureAbort:
 				return result.Error

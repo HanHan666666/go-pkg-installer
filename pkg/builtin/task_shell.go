@@ -16,11 +16,12 @@ import (
 // ShellTask executes a shell command.
 type ShellTask struct {
 	core.BaseTask
-	Command string
-	Args    []string
-	WorkDir string
-	Env     map[string]string
-	Timeout time.Duration
+	Command          string
+	Args             []string
+	WorkDir          string
+	Env              map[string]string
+	Timeout          time.Duration
+	RequirePrivilege bool
 
 	// Rollback command (optional)
 	RollbackCmd string
@@ -45,12 +46,13 @@ func RegisterShellTask() {
 				TaskType: "shell",
 				Config:   config,
 			},
-			Command:     ctx.Render(getConfigString(config, "command")),
-			Args:        renderStringSlice(ctx, getConfigStringSlice(config, "args")),
-			WorkDir:     ctx.Render(getConfigString(config, "workdir")),
-			Env:         env,
-			Timeout:     time.Duration(getConfigInt(config, "timeout", 300)) * time.Second,
-			RollbackCmd: ctx.Render(getConfigString(config, "rollback_command")),
+			Command:          ctx.Render(getConfigStringAny(config, "command", "script")),
+			Args:             renderStringSlice(ctx, getConfigStringSlice(config, "args")),
+			WorkDir:          ctx.Render(getConfigStringAny(config, "workDir", "workdir")),
+			Env:              env,
+			Timeout:          time.Duration(getConfigIntAny(config, 300, "timeoutSec", "timeout")) * time.Second,
+			RollbackCmd:      ctx.Render(getConfigStringAny(config, "rollbackCommand", "rollback_command")),
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -86,6 +88,10 @@ func (t *ShellTask) Validate() error {
 
 // Execute runs the shell command.
 func (t *ShellTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Executing: %s %s", t.Command, strings.Join(t.Args, " ")))
 
 	// Default timeout if not set

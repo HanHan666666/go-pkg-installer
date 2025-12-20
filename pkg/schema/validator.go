@@ -209,10 +209,6 @@ type Option = core.Option
 // Deprecated: Use core.BranchConfig instead.
 type BranchConfig = core.BranchConfig
 
-// UninstallTargetsConfig specifies paths to remove during uninstall.
-// Deprecated: Use core.UninstallTargetsConfig instead.
-type UninstallTargetsConfig = core.UninstallTargetsConfig
-
 // LoadConfig loads and validates an installer configuration from YAML.
 func LoadConfig(yamlContent []byte) (*core.Config, error) {
 	validator, err := NewValidator()

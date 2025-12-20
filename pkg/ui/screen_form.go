@@ -32,7 +32,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = "Configuration"
+		titleText = tr(ctx, "title.form", "Configuration")
 	}
 	titleText = ctx.Render(titleText)
 

@@ -29,9 +29,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	titleText := s.step.Screen.Title
 	if titleText == "" {
 		if success {
-			titleText = "Installation Complete"
+			titleText = tr(ctx, "title.complete", "Installation Complete")
 		} else {
-			titleText = "Installation Summary"
+			titleText = tr(ctx, "title.summary", "Installation Summary")
 		}
 	}
 	titleText = ctx.Render(titleText)
@@ -42,9 +42,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Status icon/message
 	var statusText string
 	if success {
-		statusText = "✓ The installation completed successfully!"
+		statusText = tr(ctx, "msg.success", "✓ The installation completed successfully!")
 	} else {
-		statusText = "✗ The installation encountered errors."
+		statusText = tr(ctx, "msg.failure", "✗ The installation encountered errors.")
 	}
 
 	statusLabel := parent.TLabel(Txt(statusText))
@@ -71,11 +71,42 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		dirFrame := summaryFrame.TFrame()
 		Pack(dirFrame, Fill("x"), Pady("5"))
 
-		dirLbl := dirFrame.TLabel(Txt("Installed to:"))
+		dirLbl := dirFrame.TLabel(Txt(tr(ctx, "label.installed.to", "Installed to:")))
 		Pack(dirLbl, Side("left"))
 
 		dirVal := dirFrame.TLabel(Txt(fmt.Sprintf(" %v", installDir)))
 		Pack(dirVal, Side("left"))
+	}
+
+	// Show task plan if available
+	if ctx.Plan != nil && len(ctx.Plan.Tasks) > 0 {
+		planLabel := summaryFrame.TLabel(Txt(tr(ctx, "label.plan", "Planned actions:")))
+		Pack(planLabel, Side("top"), Anchor("w"), Pady("5"))
+
+		for _, item := range ctx.Plan.Tasks {
+			line := fmt.Sprintf("- %s", item.Description)
+			if item.RequiresRoot {
+				line = fmt.Sprintf("%s (admin)", line)
+			}
+			entry := summaryFrame.TLabel(Txt(line), Wraplength("600"))
+			Pack(entry, Side("top"), Anchor("w"))
+		}
+	}
+
+	// Show errors if any
+	if len(ctx.Runtime.Errors) > 0 {
+		errLabel := summaryFrame.TLabel(Txt(tr(ctx, "label.errors", "Errors:")))
+		Pack(errLabel, Side("top"), Anchor("w"), Pady("5"))
+		for _, err := range ctx.Runtime.Errors {
+			entry := summaryFrame.TLabel(Txt(fmt.Sprintf("- %s", err.Error())), Wraplength("600"))
+			Pack(entry, Side("top"), Anchor("w"))
+		}
+	}
+
+	// Log file path
+	if logPath := ctx.LogPath(); logPath != "" {
+		logLabel := summaryFrame.TLabel(Txt(fmt.Sprintf(tr(ctx, "label.logfile", "Log file: %s"), logPath)), Wraplength("600"))
+		Pack(logLabel, Side("top"), Anchor("w"), Pady("5"))
 	}
 
 	// Spacer
@@ -91,7 +122,7 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		if launchCmd, ok := ctx.Get("launch.command"); ok && launchCmd != "" {
 			s.launchVar = Variable("1")
 			launchCheck := launchFrame.TCheckbutton(
-				Txt("Launch application after closing"),
+				Txt(tr(ctx, "label.launch", "Launch application after closing")),
 				Variable(s.launchVar),
 			)
 			Pack(launchCheck, Side("left"))
@@ -102,8 +133,7 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	}
 
 	// Footer
-	footerText := "Click 'Close' to exit the installer."
-	footer := parent.TLabel(Txt(footerText))
+	footer := parent.TLabel(Txt(tr(ctx, "footer.close", "Click 'Close' to exit the installer.")))
 	Pack(footer, Pady("10"), Side("bottom"))
 
 	return nil

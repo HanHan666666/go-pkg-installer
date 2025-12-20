@@ -25,7 +25,7 @@ func (s *OptionsScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = "Installation Options"
+		titleText = tr(ctx, "title.options", "Installation Options")
 	}
 	titleText = ctx.Render(titleText)
 

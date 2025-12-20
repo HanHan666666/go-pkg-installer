@@ -192,34 +192,6 @@ flows:
 	}
 }
 
-func TestValidateYAMLWithUninstallTargets(t *testing.T) {
-	v, _ := NewValidator()
-
-	validYAML := `
-product:
-  name: "Test App"
-uninstallTargets:
-  systemPaths:
-    - "/opt/app"
-    - "/usr/bin/app"
-  userDataPaths:
-    - "~/.config/app"
-flows:
-  install:
-    entry: "welcome"
-    steps:
-      - id: "welcome"
-        title: "Welcome"
-        screen:
-          type: "richtext"
-          content: "Welcome!"
-`
-	result := v.ValidateYAML([]byte(validYAML))
-	if !result.Valid {
-		t.Errorf("Should be valid, errors: %v", result.Errors)
-	}
-}
-
 func TestValidateYAMLInvalidSyntax(t *testing.T) {
 	v, _ := NewValidator()
 

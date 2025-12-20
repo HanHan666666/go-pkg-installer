@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	. "modernc.org/tk9.0"
@@ -13,9 +14,12 @@ import (
 
 // LicenseScreen renders a license agreement screen.
 type LicenseScreen struct {
-	step      *core.StepConfig
-	accepted  bool
-	acceptVar *VariableOpt
+	step          *core.StepConfig
+	accepted      bool
+	acceptVar     *VariableOpt
+	text          *TextWidget
+	requireScroll bool
+	ctx           *core.InstallContext
 }
 
 // NewLicenseScreen creates a license screen renderer.
@@ -25,13 +29,14 @@ func NewLicenseScreen(step *core.StepConfig) ScreenRenderer {
 
 // Render creates the license screen UI.
 func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
+	s.ctx = ctx
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
 		titleText = s.step.Title
 	}
 	if titleText == "" {
-		titleText = "License Agreement"
+		titleText = tr(ctx, "title.license", "License Agreement")
 	}
 	titleText = ctx.Render(titleText)
 
@@ -61,6 +66,8 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	)
 	scrollbar.Configure(Command(func(e *Event) { e.Yview(text) }))
 	Pack(text, Side("left"), Fill("both"), Expand(true))
+	s.text = text
+	s.requireScroll = s.step.Screen.RequireScrollToEnd
 
 	// Load license content
 	licenseText := ""
@@ -98,7 +105,7 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 
 	s.acceptVar = Variable("")
 	checkbox := acceptFrame.TCheckbutton(
-		Txt("I accept the terms of the license agreement"),
+		Txt(tr(ctx, "label.accept", "I accept the terms of the license agreement")),
 		s.acceptVar,
 		Command(func() {
 			s.syncAccepted()
@@ -112,8 +119,11 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 // Validate validates that the license is accepted.
 func (s *LicenseScreen) Validate() error {
 	s.syncAccepted()
+	if s.requireScroll && !s.scrolledToEnd() {
+		return errors.New(tr(s.ctx, "msg.scroll_end", "please scroll to the end of the license to continue"))
+	}
 	if !s.accepted {
-		return errors.New("you must accept the license agreement to continue")
+		return errors.New(tr(s.ctx, "msg.accept_license", "you must accept the license agreement to continue"))
 	}
 	return nil
 }
@@ -139,4 +149,23 @@ func (s *LicenseScreen) syncAccepted() {
 	default:
 		s.accepted = false
 	}
+}
+
+func (s *LicenseScreen) scrolledToEnd() bool {
+	if s.text == nil {
+		return true
+	}
+	return scrollReachedEnd(s.text.Yview())
+}
+
+func scrollReachedEnd(yview string) bool {
+	parts := strings.Fields(yview)
+	if len(parts) < 2 {
+		return false
+	}
+	last, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return false
+	}
+	return last >= 0.999
 }

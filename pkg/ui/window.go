@@ -23,6 +23,7 @@ type InstallerWindow struct {
 
 	// UI state
 	mainFrame    *TFrameWidget
+	sidebarFrame *TFrameWidget
 	contentFrame *TFrameWidget
 	navFrame     *TFrameWidget
 
@@ -76,6 +77,7 @@ func NewInstallerWindow(ctx *core.InstallContext, workflow *core.Workflow, bus *
 	w.RegisterScreenRenderer("summary", NewSummaryScreen)
 	w.RegisterScreenRenderer("form", NewFormScreen)
 	w.RegisterScreenRenderer("options", NewOptionsScreen)
+	w.RegisterScreenRenderer("installType", NewOptionsScreen)
 	w.RegisterScreenRenderer("finish", NewSummaryScreen)
 
 	return w
@@ -132,26 +134,34 @@ func (w *InstallerWindow) setupWindow() {
 	w.mainFrame = TFrame(Padding("10"))
 	Pack(w.mainFrame, Fill("both"), Expand(true))
 
+	// Create sidebar frame (for steps/branding)
+	w.sidebarFrame = w.mainFrame.TFrame(Width(180), Padding("5"))
+	Pack(w.sidebarFrame, Side("left"), Fill("y"), Padx("5"))
+
+	// Create content wrapper frame (content + nav)
+	contentWrapper := w.mainFrame.TFrame()
+	Pack(contentWrapper, Side("right"), Fill("both"), Expand(true))
+
 	// Create content frame (for screen content)
-	w.contentFrame = w.mainFrame.TFrame(Padding("5"))
+	w.contentFrame = contentWrapper.TFrame(Padding("5"))
 	Pack(w.contentFrame, Fill("both"), Expand(true), Side("top"))
 
 	// Create separator
-	separator := w.mainFrame.TSeparator()
+	separator := contentWrapper.TSeparator()
 	Pack(separator, Fill("x"), Pady("10"))
 
 	// Create navigation frame
-	w.navFrame = w.mainFrame.TFrame()
+	w.navFrame = contentWrapper.TFrame()
 	Pack(w.navFrame, Fill("x"), Side("bottom"))
 
 	// Create navigation buttons
-	w.cancelBtn = w.navFrame.TButton(Txt("Cancel"), Command(w.handleCancel))
+	w.cancelBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.cancel", "Cancel")), Command(w.handleCancel))
 	Pack(w.cancelBtn, Side("left"), Padx("5"))
 
-	w.nextBtn = w.navFrame.TButton(Txt("Continue"), Command(w.handleNext))
+	w.nextBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.continue", "Continue")), Command(w.handleNext))
 	Pack(w.nextBtn, Side("right"), Padx("5"))
 
-	w.backBtn = w.navFrame.TButton(Txt("Go Back"), Command(w.handleBack))
+	w.backBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.back", "Go Back")), Command(w.handleBack))
 	Pack(w.backBtn, Side("right"), Padx("5"))
 }
 
@@ -210,6 +220,9 @@ func (w *InstallerWindow) renderCurrentStep() {
 	if stepConfig.Screen != nil {
 		screenType = stepConfig.Screen.Type
 	}
+	if core.IsGoExtension(screenType) {
+		screenType = core.StripGoPrefix(screenType)
+	}
 
 	factory, ok := w.screenRenderers[screenType]
 	if !ok {
@@ -223,8 +236,41 @@ func (w *InstallerWindow) renderCurrentStep() {
 		w.ctx.AddLog(core.LogError, fmt.Sprintf("Failed to render screen: %v", err))
 	}
 
-	// Update navigation buttons
+	// Update sidebar and navigation buttons
+	w.renderSidebar()
 	w.updateNavButtons()
+}
+
+func (w *InstallerWindow) renderSidebar() {
+	if w.sidebarFrame == nil {
+		return
+	}
+
+	children := WinfoChildren(w.sidebarFrame.Window)
+	for _, child := range children {
+		Destroy(child)
+	}
+
+	productName := w.ctx.RenderOrDefault("product.name", "Installer")
+	title := w.sidebarFrame.TLabel(Txt(productName), Font("TkHeadingFont"), Anchor("w"))
+	Pack(title, Side("top"), Fill("x"), Pady("5"))
+
+	steps := w.workflow.Steps()
+	for _, step := range steps {
+		status := w.workflow.StepStatus(step.ID)
+		prefix := "[ ]"
+		switch status {
+		case core.StepCurrent:
+			prefix = "[>]"
+		case core.StepCompleted:
+			prefix = "[x]"
+		case core.StepDisabled:
+			prefix = "[-]"
+		}
+		text := fmt.Sprintf("%s %s", prefix, step.Title)
+		label := w.sidebarFrame.TLabel(Txt(text), Anchor("w"), Wraplength("160"))
+		Pack(label, Side("top"), Fill("x"), Padx("5"), Pady("2"))
+	}
 }
 
 func (w *InstallerWindow) updateNavButtons() {
@@ -249,13 +295,13 @@ func (w *InstallerWindow) updateNavButtons() {
 	}
 
 	if w.workflow.IsLastStep() {
-		w.nextBtn.Configure(Txt("Install"))
+		w.nextBtn.Configure(Txt(tr(w.ctx, "button.install", "Install")))
 	} else if screenType == "progress" {
-		w.nextBtn.Configure(Txt("Finish"))
+		w.nextBtn.Configure(Txt(tr(w.ctx, "button.finish", "Finish")))
 	} else if screenType == "summary" {
-		w.nextBtn.Configure(Txt("Close"))
+		w.nextBtn.Configure(Txt(tr(w.ctx, "button.close", "Close")))
 	} else {
-		w.nextBtn.Configure(Txt("Continue"))
+		w.nextBtn.Configure(Txt(tr(w.ctx, "button.continue", "Continue")))
 	}
 }
 
@@ -267,13 +313,13 @@ func (w *InstallerWindow) handleNext() {
 	// Validate current screen
 	if screen != nil {
 		if err := screen.Validate(); err != nil {
-			MessageBox(Icon("error"), Msg(err.Error()), Title("Validation Error"))
+			MessageBox(Icon("error"), Msg(err.Error()), Title(tr(w.ctx, "dialog.validation.title", "Validation Error")))
 			return
 		}
 
 		// Collect data from screen
 		if err := screen.Collect(w.ctx); err != nil {
-			MessageBox(Icon("error"), Msg(err.Error()), Title("Error"))
+			MessageBox(Icon("error"), Msg(err.Error()), Title(tr(w.ctx, "dialog.error.title", "Error")))
 			return
 		}
 	}
@@ -296,7 +342,7 @@ func (w *InstallerWindow) handleNext() {
 
 	_, err := w.workflow.Next()
 	if err != nil {
-		MessageBox(Icon("error"), Msg(err.Error()), Title("Navigation Error"))
+		MessageBox(Icon("error"), Msg(err.Error()), Title(tr(w.ctx, "dialog.error.title", "Navigation Error")))
 		return
 	}
 
@@ -313,7 +359,7 @@ func (w *InstallerWindow) handleBack() {
 
 	_, err := w.workflow.Prev()
 	if err != nil {
-		MessageBox(Icon("error"), Msg(err.Error()), Title("Navigation Error"))
+		MessageBox(Icon("error"), Msg(err.Error()), Title(tr(w.ctx, "dialog.error.title", "Navigation Error")))
 		return
 	}
 
@@ -326,8 +372,8 @@ func (w *InstallerWindow) handleBack() {
 func (w *InstallerWindow) handleCancel() {
 	result := MessageBox(
 		Icon("question"),
-		Msg("Are you sure you want to cancel the installation?"),
-		Title("Cancel Installation"),
+		Msg(tr(w.ctx, "dialog.cancel.msg", "Are you sure you want to cancel the installation?")),
+		Title(tr(w.ctx, "dialog.cancel.title", "Cancel Installation")),
 		Type("yesno"),
 	)
 

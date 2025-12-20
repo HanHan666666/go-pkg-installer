@@ -14,17 +14,18 @@ import (
 // DesktopEntryTask creates a .desktop file for Linux desktop integration.
 type DesktopEntryTask struct {
 	core.BaseTask
-	Name           string
-	Exec           string
-	Icon           string
-	Comment        string
-	Categories     []string
-	Terminal       bool
-	EntryType      string // Application, Link, Directory
-	StartupWMClass string
-	MimeTypes      []string
-	Keywords       []string
-	Destination    string
+	Name             string
+	Exec             string
+	Icon             string
+	Comment          string
+	Categories       []string
+	Terminal         bool
+	EntryType        string // Application, Link, Directory
+	StartupWMClass   string
+	MimeTypes        []string
+	Keywords         []string
+	Destination      string
+	RequirePrivilege bool
 
 	// For rollback
 	createdFile string
@@ -32,24 +33,30 @@ type DesktopEntryTask struct {
 
 // RegisterDesktopEntryTask registers the desktop_entry task factory.
 func RegisterDesktopEntryTask() {
-	core.Tasks.Register("desktopEntry", func(config map[string]any, ctx *core.InstallContext) (core.Task, error) {
+	factory := func(config map[string]any, ctx *core.InstallContext) (core.Task, error) {
+		taskType := getConfigString(config, "type")
+		if taskType == "" {
+			taskType = "desktopEntry"
+		}
+
 		task := &DesktopEntryTask{
 			BaseTask: core.BaseTask{
 				TaskID:   getConfigString(config, "id"),
-				TaskType: "desktopEntry",
+				TaskType: taskType,
 				Config:   config,
 			},
-			Name:           ctx.Render(getConfigString(config, "name")),
-			Exec:           ctx.Render(getConfigString(config, "exec")),
-			Icon:           ctx.Render(getConfigString(config, "icon")),
-			Comment:        ctx.Render(getConfigString(config, "comment")),
-			Categories:     getConfigStringSlice(config, "categories"),
-			Terminal:       getConfigBool(config, "terminal"),
-			EntryType:      getConfigString(config, "type"),
-			StartupWMClass: ctx.Render(getConfigString(config, "startup_wm_class")),
-			MimeTypes:      getConfigStringSlice(config, "mime_types"),
-			Keywords:       getConfigStringSlice(config, "keywords"),
-			Destination:    ctx.Render(getConfigString(config, "destination")),
+			Name:             ctx.Render(getConfigString(config, "name")),
+			Exec:             ctx.Render(getConfigString(config, "exec")),
+			Icon:             ctx.Render(getConfigString(config, "icon")),
+			Comment:          ctx.Render(getConfigString(config, "comment")),
+			Categories:       getConfigStringSlice(config, "categories"),
+			Terminal:         getConfigBool(config, "terminal"),
+			EntryType:        getConfigStringAny(config, "entryType", "entry_type"),
+			StartupWMClass:   ctx.Render(getConfigString(config, "startup_wm_class")),
+			MimeTypes:        getConfigStringSlice(config, "mime_types"),
+			Keywords:         getConfigStringSlice(config, "keywords"),
+			Destination:      ctx.Render(getConfigString(config, "destination")),
+			RequirePrivilege: getConfigBool(config, "requirePrivilege"),
 		}
 
 		if task.TaskID == "" {
@@ -69,7 +76,10 @@ func RegisterDesktopEntryTask() {
 		}
 
 		return task, nil
-	})
+	}
+
+	core.Tasks.Register("desktopEntry", factory)
+	core.Tasks.Register("createDesktopEntry", factory)
 }
 
 // Validate validates the desktop_entry task configuration.
@@ -85,6 +95,10 @@ func (t *DesktopEntryTask) Validate() error {
 
 // Execute creates the .desktop file.
 func (t *DesktopEntryTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error {
+	if err := ensurePrivilege(ctx, t.RequirePrivilege); err != nil {
+		return err
+	}
+
 	ctx.AddLog(core.LogInfo, fmt.Sprintf("Creating desktop entry: %s", t.Destination))
 
 	// Ensure parent directory exists
