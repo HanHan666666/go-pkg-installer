@@ -42,7 +42,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	if titleText == "" {
 		titleText = tr(ctx, "title.progress", "Installing...")
 	}
-	titleText = trText(ctx, titleText)
+	titleText = ctx.Render(titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("10"), Side("top"))
@@ -50,9 +50,9 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	// Description
 	desc := s.step.Screen.Description
 	if desc == "" {
-		desc = tr(ctx, "desc.progress.wait", "Please wait while the installation completes.")
+		desc = "Please wait while the installation completes."
 	}
-	desc = trText(ctx, desc)
+	desc = ctx.Render(desc)
 
 	descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
 	Pack(descLabel, Pady("10"), Side("top"))
@@ -110,7 +110,7 @@ func (s *ProgressScreen) UpdateProgress(percent float64, status string) {
 			s.progressVar.Set(percent)
 		}
 		if s.statusLabel != nil && status != "" {
-			s.statusLabel.Configure(Txt(trText(s.ctx, status)))
+			s.statusLabel.Configure(Txt(status))
 		}
 	}, true)
 }
@@ -169,7 +169,7 @@ func (s *ProgressScreen) startInstallation() {
 	// Queue tasks
 	for _, task := range tasks {
 		if err := s.taskRunner.QueueConfig(task); err != nil {
-			s.AddLogMessage(fmt.Sprintf(tr(s.ctx, "msg.task.queue_fail", "Failed to queue task: %v"), err))
+			s.AddLogMessage(fmt.Sprintf("Failed to queue task: %v", err))
 		}
 	}
 
@@ -179,7 +179,7 @@ func (s *ProgressScreen) startInstallation() {
 
 	s.bus.Subscribe(core.EventTaskStart, func(e core.Event) {
 		if p := e.TaskPayload(); p != nil {
-			s.AddLogMessage(fmt.Sprintf(tr(s.ctx, "msg.task.start", "Starting: %s"), p.TaskID))
+			s.AddLogMessage(fmt.Sprintf("Starting: %s", p.TaskID))
 		}
 	})
 
@@ -187,14 +187,14 @@ func (s *ProgressScreen) startInstallation() {
 		if p := e.TaskPayload(); p != nil {
 			completedTasks++
 			progress := float64(completedTasks) / float64(totalTasks) * 100
-			s.UpdateProgress(progress, fmt.Sprintf(tr(s.ctx, "msg.task.complete", "Completed: %s"), p.TaskID))
-			s.AddLogMessage(fmt.Sprintf(tr(s.ctx, "msg.task.complete", "Completed: %s"), p.TaskID))
+			s.UpdateProgress(progress, fmt.Sprintf("Completed: %s", p.TaskID))
+			s.AddLogMessage(fmt.Sprintf("✓ Completed: %s", p.TaskID))
 		}
 	})
 
 	s.bus.Subscribe(core.EventTaskError, func(e core.Event) {
 		if p := e.TaskPayload(); p != nil {
-			s.AddLogMessage(fmt.Sprintf(tr(s.ctx, "msg.task.error", "Error in %s: %v"), p.TaskID, p.Error))
+			s.AddLogMessage(fmt.Sprintf("✗ Error in %s: %v", p.TaskID, p.Error))
 		}
 	})
 

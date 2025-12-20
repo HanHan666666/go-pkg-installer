@@ -29,9 +29,9 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = fmt.Sprintf(tr(ctx, "title.welcome", "Welcome to %s"), displayName)
+		titleText = fmt.Sprintf(tr(ctx, "title.welcome", "Welcome to %s"), productName)
 	}
-	titleText = trText(ctx, titleText)
+	titleText = ctx.Render(titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("20"), Side("top"))
@@ -52,13 +52,13 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Optional content block
 	content := ""
 	if s.step.Screen.Content != "" {
-		content = trText(ctx, s.step.Screen.Content)
+		content = ctx.Render(s.step.Screen.Content)
 	} else if s.step.Screen.ContentFile != "" {
 		filePath := ctx.Render(s.step.Screen.ContentFile)
 		if data, err := os.ReadFile(filePath); err == nil {
 			content = string(data)
 		} else {
-			content = fmt.Sprintf(tr(ctx, "msg.content.file", "Content would be loaded from: %s"), filePath)
+			content = "Content would be loaded from: " + filePath
 		}
 	}
 	if content != "" {

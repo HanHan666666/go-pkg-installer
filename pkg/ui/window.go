@@ -148,12 +148,11 @@ func (w *InstallerWindow) setupWindow() {
 	if productName == nil {
 		productName = "Installer"
 	}
-	displayName := trText(w.ctx, fmt.Sprintf("%v", productName))
 
 	applyTheme(w.ctx)
 
 	// Configure main window title and size
-	App.WmTitle(displayName)
+	App.WmTitle(fmt.Sprintf("%v", productName))
 	WmGeometry(App, "700x500")
 	WmMinSize(App, 700, 500)
 
@@ -295,9 +294,8 @@ func (w *InstallerWindow) renderSidebar() {
 	}
 
 	productName := w.ctx.RenderOrDefault("product.name", "Installer")
-	displayName := trText(w.ctx, productName)
 	title := w.sidebarFrame.TLabel(
-		Txt(displayName),
+		Txt(productName),
 		Font("TkHeadingFont"),
 		Anchor("w"),
 		Style("SidebarTitle.TLabel"),
@@ -320,11 +318,7 @@ func (w *InstallerWindow) renderSidebar() {
 			prefix = "𐄂"
 			style = "SidebarDisabled.TLabel"
 		}
-		stepTitle := step.Title
-		if step.Config != nil && step.Config.Title != "" {
-			stepTitle = step.Config.Title
-		}
-		text := fmt.Sprintf("%s %s", prefix, trText(w.ctx, stepTitle))
+		text := fmt.Sprintf("%s %s", prefix, step.Title)
 		label := w.sidebarFrame.TLabel(
 			Txt(text),
 			Anchor("w"),

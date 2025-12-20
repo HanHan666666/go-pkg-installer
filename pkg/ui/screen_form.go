@@ -14,7 +14,6 @@ import (
 type FormScreen struct {
 	step   *core.StepConfig
 	fields []formField
-	ctx    *core.InstallContext
 }
 
 type formField struct {
@@ -30,21 +29,19 @@ func NewFormScreen(step *core.StepConfig) ScreenRenderer {
 
 // Render creates the form screen UI.
 func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
-	s.ctx = ctx
-
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
 		titleText = tr(ctx, "title.form", "Configuration")
 	}
-	titleText = trText(ctx, titleText)
+	titleText = ctx.Render(titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("10"), Side("top"))
 
 	// Description
 	if desc := s.step.Screen.Description; desc != "" {
-		desc = trText(ctx, desc)
+		desc = ctx.Render(desc)
 		descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
 		Pack(descLabel, Pady("10"), Side("top"))
 	}
@@ -70,7 +67,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 		Pack(rowFrame, Fill("x"), Pady("5"))
 
 		// Label
-		labelText := trText(ctx, fieldConfig.Label)
+		labelText := fieldConfig.Label
 		if fieldConfig.Required {
 			labelText += " *"
 		}
@@ -112,7 +109,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 				Style("Secondary.TButton"),
 				Command(func() {
 					dir := ChooseDirectory(
-						Title(tr(ctx, "dialog.select.dir", "Select Directory")),
+						Title("Select Directory"),
 						Initialdir(entry.Textvariable()),
 					)
 					if dir != "" {
@@ -139,7 +136,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 				Style("Secondary.TButton"),
 				Command(func() {
 					files := GetOpenFile(
-						Title(tr(ctx, "dialog.select.file", "Select File")),
+						Title("Select File"),
 					)
 					if len(files) > 0 {
 						entry.Configure(Textvariable(files[0]))
@@ -188,7 +185,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 			field.variable = Variable(defaultVal)
 			for j, opt := range fieldConfig.Options {
 				radio := radioFrame.TRadiobutton(
-					Txt(trText(ctx, opt.Label)),
+					Txt(opt.Label),
 					Variable(field.variable),
 					Value(opt.Value),
 				)
@@ -208,8 +205,7 @@ func (s *FormScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus 
 
 		// Hint text
 		if fieldConfig.Hint != "" {
-			hintText := trText(ctx, fieldConfig.Hint)
-			hint := formFrame.TLabel(Txt(hintText), Foreground("gray"))
+			hint := formFrame.TLabel(Txt(ctx.Render(fieldConfig.Hint)), Foreground("gray"))
 			Pack(hint, Side("top"), Anchor("w"), Padx("130"))
 		}
 
@@ -228,8 +224,7 @@ func (s *FormScreen) Validate() error {
 
 		// Check required
 		if field.config.Required && value == "" {
-			label := trText(s.ctx, field.config.Label)
-			errs = append(errs, fmt.Sprintf(tr(s.ctx, "msg.field.required", "%s is required"), label))
+			errs = append(errs, fmt.Sprintf("%s is required", field.config.Label))
 			continue
 		}
 
