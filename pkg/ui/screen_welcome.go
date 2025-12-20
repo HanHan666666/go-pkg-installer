@@ -24,13 +24,14 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Get product info
 	productName := ctx.RenderOrDefault("product.name", "Application")
 	// version := ctx.RenderOrDefault("product.version", "")
+	displayName := trText(ctx, productName)
 
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		titleText = fmt.Sprintf(tr(ctx, "title.welcome", "Welcome to %s"), productName)
+		titleText = fmt.Sprintf(tr(ctx, "title.welcome", "Welcome to %s"), displayName)
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("20"), Side("top"))
@@ -38,12 +39,12 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// // Description
 	// description := s.step.Screen.Description
 	// if description == "" {
-	// 	description = fmt.Sprintf("This will install %s on your computer.", productName)
+	// 	description = fmt.Sprintf(tr(ctx, "desc.welcome", "This will install %s on your computer."), displayName)
 	// 	if version != "" {
-	// 		description = fmt.Sprintf("This will install %s version %s on your computer.", productName, version)
+	// 		description = fmt.Sprintf(tr(ctx, "desc.welcome.version", "This will install %s version %s on your computer."), displayName, version)
 	// 	}
 	// }
-	// description = ctx.Render(description)
+	// description = trText(ctx, description)
 
 	// descLabel := parent.TLabel(Txt(description), Wraplength("600"))
 	// Pack(descLabel, Pady("10"), Side("top"))
@@ -51,13 +52,13 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Optional content block
 	content := ""
 	if s.step.Screen.Content != "" {
-		content = ctx.Render(s.step.Screen.Content)
+		content = trText(ctx, s.step.Screen.Content)
 	} else if s.step.Screen.ContentFile != "" {
 		filePath := ctx.Render(s.step.Screen.ContentFile)
 		if data, err := os.ReadFile(filePath); err == nil {
 			content = string(data)
 		} else {
-			content = "Content would be loaded from: " + filePath
+			content = fmt.Sprintf(tr(ctx, "msg.content.file", "Content would be loaded from: %s"), filePath)
 		}
 	}
 	if content != "" {

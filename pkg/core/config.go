@@ -156,12 +156,13 @@ type UninstallConfig struct {
 
 // Config represents the complete installer configuration.
 type Config struct {
-	Schema    string                 `yaml:"$schema,omitempty" json:"$schema,omitempty"`
-	Product   *ProductConfig         `yaml:"product" json:"product"`
-	Meta      map[string]any         `yaml:"meta,omitempty" json:"meta,omitempty"`
-	Sources   *SourcesConfig         `yaml:"sources,omitempty" json:"sources,omitempty"`
-	Flow      *FlowConfig            `yaml:"flow,omitempty" json:"flow,omitempty"`
-	Flows     map[string]*FlowConfig `yaml:"flows,omitempty" json:"flows,omitempty"`
-	Install   *InstallConfig         `yaml:"install,omitempty" json:"install,omitempty"`
-	Uninstall *UninstallConfig       `yaml:"uninstall,omitempty" json:"uninstall,omitempty"`
+	Schema    string                       `yaml:"$schema,omitempty" json:"$schema,omitempty"`
+	Product   *ProductConfig               `yaml:"product" json:"product"`
+	Meta      map[string]any               `yaml:"meta,omitempty" json:"meta,omitempty"`
+	I18n      map[string]map[string]string `yaml:"i18n,omitempty" json:"i18n,omitempty"`
+	Sources   *SourcesConfig               `yaml:"sources,omitempty" json:"sources,omitempty"`
+	Flow      *FlowConfig                  `yaml:"flow,omitempty" json:"flow,omitempty"`
+	Flows     map[string]*FlowConfig       `yaml:"flows,omitempty" json:"flows,omitempty"`
+	Install   *InstallConfig               `yaml:"install,omitempty" json:"install,omitempty"`
+	Uninstall *UninstallConfig             `yaml:"uninstall,omitempty" json:"uninstall,omitempty"`
 }

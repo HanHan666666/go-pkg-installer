@@ -21,6 +21,15 @@
         ]
       }
     },
+    "i18n": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      }
+    },
     "flows": {
       "type": "object",
       "minProperties": 1,

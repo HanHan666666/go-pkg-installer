@@ -47,7 +47,7 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 			titleText = tr(ctx, "title.summary", "Installation Summary")
 		}
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := body.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Grid(title, Row(row), Column(0), Sticky("w"), Pady("20"))
@@ -58,9 +58,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	if !hasResult {
 		statusText = tr(ctx, "msg.ready", "Review the details before installing.")
 	} else if success {
-		statusText = tr(ctx, "msg.success", "✓ The installation completed successfully!")
+		statusText = tr(ctx, "msg.success", "The installation completed successfully!")
 	} else {
-		statusText = tr(ctx, "msg.failure", "✗ The installation encountered errors.")
+		statusText = tr(ctx, "msg.failure", "The installation encountered errors.")
 	}
 
 	statusLabel := body.TLabel(Txt(statusText))
@@ -71,10 +71,11 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	desc := s.step.Screen.Description
 	if desc == "" && success {
 		productName := ctx.RenderOrDefault("product.name", "The application")
-		desc = fmt.Sprintf("%s has been installed on your computer.", productName)
+		displayName := trText(ctx, productName)
+		desc = fmt.Sprintf(tr(ctx, "desc.summary.success", "%s has been installed on your computer."), displayName)
 	}
 	if desc != "" {
-		desc = ctx.Render(desc)
+		desc = trText(ctx, desc)
 		descLabel := body.TLabel(Txt(desc), Wraplength("600"))
 		Grid(descLabel, Row(row), Column(0), Sticky("w"), Pady("10"))
 		row++
@@ -111,9 +112,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 		}
 		lines = append(lines, tr(ctx, "label.plan", "Planned actions:"))
 		for _, item := range ctx.Plan.Tasks {
-			line := fmt.Sprintf("- %s", item.Description)
+			line := fmt.Sprintf("- %s", trText(ctx, item.Description))
 			if item.RequiresRoot {
-				line = fmt.Sprintf("%s (admin)", line)
+				line = fmt.Sprintf("%s %s", line, tr(ctx, "label.admin", "(admin)"))
 			}
 			lines = append(lines, line)
 		}
