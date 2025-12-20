@@ -13,28 +13,37 @@ import (
 )
 
 type uiPalette struct {
-	appBg        string
-	surface      string
-	sidebar      string
-	border       string
-	text         string
-	muted        string
-	accent       string
-	accentHover  string
-	accentActive string
-	buttonBg     string
-	buttonHover  string
+	appBg           string
+	surface         string
+	sidebar         string
+	border          string
+	text            string
+	muted           string
+	secondaryBorder string
+	secondaryText   string
+	tertiaryText    string
+	accent          string
+	accentHover     string
+	accentActive    string
+	buttonBg        string
+	buttonHover     string
 }
 
 var (
 	themeOnce      sync.Once
 	currentPalette = defaultPalette()
+	buttonFont     *FontFace
+	useAzureTheme  bool
 )
 
 func applyTheme(ctx *core.InstallContext) {
 	themeOnce.Do(func() {
 		currentPalette = buildPalette(ctx)
-		_ = ActivateTheme("azure light")
+		if err := ActivateTheme("Azure light"); err == nil {
+			useAzureTheme = true
+		} else if err := ActivateTheme("azure light"); err == nil {
+			useAzureTheme = true
+		}
 		applyFonts()
 		applyStyles(currentPalette)
 		App.Configure(Background(currentPalette.appBg))
@@ -57,17 +66,20 @@ func applyTextStyle(text *TextWidget) {
 
 func defaultPalette() uiPalette {
 	return uiPalette{
-		appBg:        "#f5f7fb",
-		surface:      "#ffffff",
-		sidebar:      "#f1f5f9",
-		border:       "#e5e7eb",
-		text:         "#111827",
-		muted:        "#6b7280",
-		accent:       "#2563eb",
-		accentHover:  "#3b82f6",
-		accentActive: "#1e40af",
-		buttonBg:     "#f3f4f6",
-		buttonHover:  "#e5e7eb",
+		appBg:           "#f5f7fb",
+		surface:         "#ffffff",
+		sidebar:         "#f1f5f9",
+		border:          "#e5e7eb",
+		text:            "#111827",
+		muted:           "#6b7280",
+		secondaryBorder: "#d9d9d9",
+		secondaryText:   "#595959",
+		tertiaryText:    "#8c8c8c",
+		accent:          "#1677ff",
+		accentHover:     "#4096ff",
+		accentActive:    "#0958d9",
+		buttonBg:        "#f3f4f6",
+		buttonHover:     "#e5e7eb",
 	}
 }
 
@@ -93,6 +105,11 @@ func applyFonts() {
 	applyFont("TkTextFont", family, 10, "")
 	applyFont("TkHeadingFont", family, 14, "bold")
 	applyFont("TkSmallCaptionFont", family, 9, "")
+	if family != "" {
+		buttonFont = NewFont(Family(family), Size(10), Weight("bold"))
+	} else {
+		buttonFont = NewFont(Size(10), Weight("bold"))
+	}
 }
 
 func applyFont(name, family string, size int, weight string) {
@@ -137,32 +154,68 @@ func applyStyles(p uiPalette) {
 	StyleConfigure("TLabel", Background(p.surface), Foreground(p.text))
 	StyleConfigure("TSeparator", Background(p.border))
 
-	StyleConfigure("TButton", Padding("10 6"), Focussolid(false))
+	StyleConfigure("TButton", Padding("8 4"), Focussolid(false))
 	StyleMap("TButton", Foreground, "disabled", p.muted)
 
 	StyleConfigure("Primary.TButton",
 		Background(p.accent),
 		Foreground("#ffffff"),
 		Borderwidth(0),
-		Padding("12 6"),
+		Padding("12 4"),
 		Focuscolor(p.accent),
 		Focussolid(false),
 	)
+	if buttonFont != nil {
+		StyleConfigure("Primary.TButton", Font(buttonFont))
+	}
 	StyleMap("Primary.TButton",
 		Background, "active", p.accentHover, "pressed", p.accentActive,
 		Foreground, "disabled", p.muted,
 	)
 
+	StyleConfigure("Accent.TButton",
+		Padding("12 4"),
+		Foreground("#ffffff"),
+		Focussolid(false),
+	)
+	if buttonFont != nil {
+		StyleConfigure("Accent.TButton", Font(buttonFont))
+	}
+	StyleMap("Accent.TButton",
+		Foreground, "active", "#ffffff", "disabled", p.muted,
+	)
+
 	StyleConfigure("Secondary.TButton",
-		Background(p.buttonBg),
-		Foreground(p.text),
-		Borderwidth(0),
-		Padding("10 6"),
+		Background(p.surface),
+		Foreground(p.secondaryText),
+		Borderwidth(1),
+		Bordercolor(p.secondaryBorder),
+		Padding("10 4"),
 		Focussolid(false),
 	)
 	StyleMap("Secondary.TButton",
 		Background, "active", p.buttonHover, "pressed", p.buttonHover,
 		Foreground, "disabled", p.muted,
+	)
+
+	StyleConfigure("Tertiary.TButton",
+		Background(p.surface),
+		Foreground(p.tertiaryText),
+		Borderwidth(0),
+		Padding("6 3"),
+		Focussolid(false),
+	)
+	StyleMap("Tertiary.TButton",
+		Foreground, "active", p.secondaryText, "disabled", p.muted,
+	)
+
+	StyleConfigure("Toolbutton",
+		Padding("6 3"),
+		Foreground(p.tertiaryText),
+		Focussolid(false),
+	)
+	StyleMap("Toolbutton",
+		Foreground, "active", p.secondaryText, "disabled", p.muted,
 	)
 
 	StyleConfigure("TEntry",
@@ -197,6 +250,13 @@ func applyStyles(p uiPalette) {
 	StyleConfigure("SidebarActive.TLabel", Background(p.sidebar), Foreground(p.text))
 	StyleConfigure("SidebarDone.TLabel", Background(p.sidebar), Foreground(p.accent))
 	StyleConfigure("SidebarDisabled.TLabel", Background(p.sidebar), Foreground(p.border))
+}
+
+func navButtonStyles() (primary, secondary, tertiary string) {
+	if useAzureTheme {
+		return "Accent.TButton", "TButton", "Toolbutton"
+	}
+	return "Primary.TButton", "Secondary.TButton", "Tertiary.TButton"
 }
 
 func normalizeHex(value string) (string, bool) {

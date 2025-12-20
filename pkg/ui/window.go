@@ -195,9 +195,10 @@ func (w *InstallerWindow) setupWindow() {
 	w.backBtn = w.navFrame.TButton(Txt(tr(w.ctx, "button.back", "Go Back")), Command(w.handleBack))
 	Pack(w.backBtn, Side("right"), Padx("5"))
 
-	w.cancelBtn.Configure(Style("Secondary.TButton"))
-	w.backBtn.Configure(Style("Secondary.TButton"))
-	w.nextBtn.Configure(Style("Primary.TButton"))
+	primaryStyle, secondaryStyle, tertiaryStyle := navButtonStyles()
+	w.cancelBtn.Configure(Style(tertiaryStyle))
+	w.backBtn.Configure(Style(secondaryStyle))
+	w.nextBtn.Configure(Style(primaryStyle))
 }
 
 func (w *InstallerWindow) subscribeEvents() {
@@ -313,10 +314,10 @@ func (w *InstallerWindow) renderSidebar() {
 			prefix = "▶"
 			style = "SidebarActive.TLabel"
 		case core.StepCompleted:
-			prefix = "✓"
+			prefix = "✅"
 			style = "SidebarDone.TLabel"
 		case core.StepDisabled:
-			prefix = "✗"
+			prefix = "𐄂"
 			style = "SidebarDisabled.TLabel"
 		}
 		stepTitle := step.Title

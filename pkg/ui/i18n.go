@@ -13,7 +13,7 @@ var uiTranslations = map[string]map[string]string{
 	"en": {
 		"button.back":             "Go Back",
 		"button.cancel":           "Cancel",
-		"button.continue":         "Continue",
+		"button.continue":         "Continue ▶",
 		"button.install":          "Install",
 		"button.finish":           "Finish",
 		"button.exit":             "Exit",
@@ -77,7 +77,7 @@ var uiTranslations = map[string]map[string]string{
 	"zh": {
 		"button.back":              "返回",
 		"button.cancel":            "取消",
-		"button.continue":          "继续",
+		"button.continue":          "继续 ▶",
 		"button.install":           "安装",
 		"button.finish":            "完成",
 		"button.exit":              "退出",
