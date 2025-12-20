@@ -19,7 +19,6 @@
 
 ![Screenshot](docs/assets/screenshot.png)
 
-> 请将截图放到 `docs/assets/screenshot.png`。
 
 ## 快速开始
 

@@ -19,8 +19,6 @@ A Linux installation framework written in Go, inspired by macOS `.pkg` installer
 
 ![Screenshot](docs/assets/screenshot.png)
 
-> Place your screenshot at `docs/assets/screenshot.png`.
-
 ## Quick Start
 
 ### Install
