@@ -112,6 +112,9 @@ func main() {
 		ctx.Set(key, value)
 		ctx.Set("meta."+key, value)
 	}
+	if len(cfg.I18n) > 0 {
+		ctx.Set("i18n", cfg.I18n)
+	}
 
 	// CLI overrides
 	if *privilege != "" {

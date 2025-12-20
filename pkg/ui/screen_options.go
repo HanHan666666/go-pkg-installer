@@ -27,14 +27,14 @@ func (s *OptionsScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	if titleText == "" {
 		titleText = tr(ctx, "title.options", "Installation Options")
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("10"), Side("top"))
 
 	// Description
 	if desc := s.step.Screen.Description; desc != "" {
-		desc = ctx.Render(desc)
+		desc = trText(ctx, desc)
 		descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
 		Pack(descLabel, Pady("10"), Side("top"))
 	}
@@ -58,7 +58,7 @@ func (s *OptionsScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 
 		varOpt := Variable("")
 		check := optionsFrame.TCheckbutton(
-			Txt(opt.Label),
+			Txt(trText(ctx, opt.Label)),
 			varOpt,
 		)
 		if checked {

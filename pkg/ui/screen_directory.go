@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -16,6 +17,7 @@ type DirectoryScreen struct {
 	pathEntry  *TEntryWidget
 	varName    string
 	defaultDir string
+	ctx        *core.InstallContext
 }
 
 // NewDirectoryScreen creates a directory screen renderer.
@@ -25,12 +27,14 @@ func NewDirectoryScreen(step *core.StepConfig) ScreenRenderer {
 
 // Render creates the directory selection screen UI.
 func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
+	s.ctx = ctx
+
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
 		titleText = tr(ctx, "title.directory", "Select Installation Directory")
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("10"), Side("top"))
@@ -40,7 +44,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 	if desc == "" {
 		desc = tr(ctx, "desc.directory", "Choose the folder where you want to install the application.")
 	}
-	desc = ctx.Render(desc)
+	desc = trText(ctx, desc)
 
 	descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
 	Pack(descLabel, Pady("10"), Side("top"))
@@ -131,7 +135,7 @@ func (s *DirectoryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext,
 func (s *DirectoryScreen) Validate() error {
 	dir := s.pathEntry.Textvariable()
 	if dir == "" {
-		return errors.New("please select an installation directory")
+		return errors.New(tr(s.ctx, "msg.dir.required", "Please select an installation directory."))
 	}
 
 	// Check if parent directory exists or can be created
@@ -139,7 +143,7 @@ func (s *DirectoryScreen) Validate() error {
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
 		// Try to check if we can create it
 		if err := os.MkdirAll(parentDir, 0755); err != nil {
-			return errors.New("cannot create installation directory: " + err.Error())
+			return fmt.Errorf(tr(s.ctx, "msg.dir.create", "Cannot create installation directory: %v"), err)
 		}
 		// Clean up test directory
 		os.Remove(parentDir)
@@ -148,7 +152,7 @@ func (s *DirectoryScreen) Validate() error {
 	// Check write permissions on parent
 	if info, err := os.Stat(parentDir); err == nil {
 		if !info.IsDir() {
-			return errors.New("parent path is not a directory")
+			return errors.New(tr(s.ctx, "msg.dir.parent", "Parent path is not a directory."))
 		}
 	}
 

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 
 	. "modernc.org/tk9.0"
@@ -25,14 +26,14 @@ func (s *RichtextScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	if titleText == "" {
 		titleText = tr(ctx, "title.info", "Information")
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("10"), Side("top"))
 
 	// Description (if present)
 	if desc := s.step.Screen.Description; desc != "" {
-		desc = ctx.Render(desc)
+		desc = trText(ctx, desc)
 		descLabel := parent.TLabel(Txt(desc), Wraplength("600"))
 		Pack(descLabel, Pady("5"), Side("top"))
 	}
@@ -57,13 +58,13 @@ func (s *RichtextScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	// Load content
 	content := ""
 	if s.step.Screen.Content != "" {
-		content = ctx.Render(s.step.Screen.Content)
+		content = trText(ctx, s.step.Screen.Content)
 	} else if s.step.Screen.ContentFile != "" {
 		filePath := ctx.Render(s.step.Screen.ContentFile)
 		if data, err := os.ReadFile(filePath); err == nil {
 			content = string(data)
 		} else {
-			content = "Content would be loaded from: " + filePath
+			content = fmt.Sprintf(tr(ctx, "msg.content.file", "Content would be loaded from: %s"), filePath)
 		}
 	}
 

@@ -43,7 +43,7 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	if titleText == "" {
 		titleText = tr(ctx, "title.license", "License Agreement")
 	}
-	titleText = ctx.Render(titleText)
+	titleText = trText(ctx, titleText)
 
 	title := body.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Grid(title, Row(row), Column(0), Sticky("w"), Pady("10"))
@@ -51,7 +51,7 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 
 	// Description
 	if desc := s.step.Screen.Description; desc != "" {
-		desc = ctx.Render(desc)
+		desc = trText(ctx, desc)
 		descLabel := body.TLabel(Txt(desc), Wraplength("600"))
 		Grid(descLabel, Row(row), Column(0), Sticky("w"), Pady("5"))
 		row++
@@ -83,26 +83,32 @@ func (s *LicenseScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Load license content
 	licenseText := ""
 	if s.step.Screen.Content != "" {
-		licenseText = ctx.Render(s.step.Screen.Content)
+		licenseText = trText(ctx, s.step.Screen.Content)
 	} else if s.step.Screen.Source != "" {
-		source := ctx.Render(s.step.Screen.Source)
-		if strings.ContainsAny(source, "\n\r") {
-			licenseText = source
-		} else if data, err := os.ReadFile(source); err == nil {
-			licenseText = string(data)
+		source := s.step.Screen.Source
+		trimmedSource := strings.TrimSpace(source)
+		if strings.HasPrefix(trimmedSource, i18nPrefix) || strings.HasPrefix(trimmedSource, i18nShortPrefix) {
+			licenseText = trText(ctx, source)
 		} else {
-			licenseText = source
+			source = ctx.Render(source)
+			if strings.ContainsAny(source, "\n\r") {
+				licenseText = trText(ctx, source)
+			} else if data, err := os.ReadFile(source); err == nil {
+				licenseText = string(data)
+			} else {
+				licenseText = source
+			}
 		}
 	} else if s.step.Screen.ContentFile != "" {
 		filePath := ctx.Render(s.step.Screen.ContentFile)
 		if data, err := os.ReadFile(filePath); err == nil {
 			licenseText = string(data)
 		} else {
-			licenseText = fmt.Sprintf("License content would be loaded from: %s", filePath)
+			licenseText = fmt.Sprintf(tr(ctx, "msg.license.file", "License content would be loaded from: %s"), filePath)
 		}
 	}
 	if licenseText == "" {
-		licenseText = "License content is empty."
+		licenseText = tr(ctx, "msg.license.empty", "License content is empty.")
 	}
 
 	// Insert license text
