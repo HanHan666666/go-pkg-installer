@@ -304,6 +304,7 @@ func (w *InstallerWindow) updateNavButtons() {
 	}
 
 	stepConfig := step.Config
+	nextStep := w.nextEnabledStep(step.ID)
 
 	// Back button - disable on first step
 	if w.workflow.CanGoBack() {
@@ -317,12 +318,29 @@ func (w *InstallerWindow) updateNavButtons() {
 	if stepConfig.Screen != nil {
 		screenType = stepConfig.Screen.Type
 	}
+	if core.IsGoExtension(screenType) {
+		screenType = core.StripGoPrefix(screenType)
+	}
 
-	if w.workflow.IsLastStep() {
-		w.nextBtn.Configure(Txt(tr(w.ctx, "button.install", "Install")))
-	} else if screenType == "progress" {
+	nextScreenType := ""
+	if nextStep != nil && nextStep.Config != nil && nextStep.Config.Screen != nil {
+		nextScreenType = nextStep.Config.Screen.Type
+	}
+	if core.IsGoExtension(nextScreenType) {
+		nextScreenType = core.StripGoPrefix(nextScreenType)
+	}
+
+	if screenType == "progress" {
 		w.nextBtn.Configure(Txt(tr(w.ctx, "button.finish", "Finish")))
-	} else if screenType == "summary" {
+	} else if screenType == "summary" || screenType == "finish" {
+		if nextScreenType == "progress" {
+			w.nextBtn.Configure(Txt(tr(w.ctx, "button.install", "Install")))
+		} else if w.workflow.IsLastStep() || nextStep == nil {
+			w.nextBtn.Configure(Txt(tr(w.ctx, "button.close", "Close")))
+		} else {
+			w.nextBtn.Configure(Txt(tr(w.ctx, "button.continue", "Continue")))
+		}
+	} else if w.workflow.IsLastStep() || nextStep == nil {
 		w.nextBtn.Configure(Txt(tr(w.ctx, "button.close", "Close")))
 	} else {
 		w.nextBtn.Configure(Txt(tr(w.ctx, "button.continue", "Continue")))
@@ -350,13 +368,9 @@ func (w *InstallerWindow) handleNext() {
 
 	// Get current step config
 	step := w.workflow.CurrentStep()
-	screenType := ""
-	if step != nil && step.Config != nil && step.Config.Screen != nil {
-		screenType = step.Config.Screen.Type
-	}
 
 	// Check if this is the last step or summary
-	if w.workflow.IsLastStep() || screenType == "summary" {
+	if w.workflow.IsLastStep() || w.nextEnabledStep(step.ID) == nil {
 		if w.onComplete != nil {
 			w.onComplete()
 		}
@@ -408,6 +422,29 @@ func (w *InstallerWindow) handleCancel() {
 		Destroy(App)
 		os.Exit(0)
 	}
+}
+
+func (w *InstallerWindow) nextEnabledStep(currentID string) *core.Step {
+	steps := w.workflow.Steps()
+	if len(steps) == 0 {
+		return nil
+	}
+	index := -1
+	for i, step := range steps {
+		if step.ID == currentID {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return nil
+	}
+	for i := index + 1; i < len(steps); i++ {
+		if w.workflow.StepStatus(steps[i].ID) != core.StepDisabled {
+			return steps[i]
+		}
+	}
+	return nil
 }
 
 // after schedules a function to run after a delay.

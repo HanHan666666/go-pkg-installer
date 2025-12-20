@@ -259,6 +259,9 @@ func (r *TaskRunner) Run() error {
 
 		if result.State == TaskFailed {
 			r.ctx.AddError(result.Error)
+			if result.Error != nil {
+				r.ctx.AddLog(LogError, fmt.Sprintf("Task %s failed: %v", task.ID(), result.Error))
+			}
 			switch r.failurePolicy {
 			case FailureAbort:
 				return result.Error

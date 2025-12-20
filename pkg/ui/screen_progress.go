@@ -64,7 +64,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 	s.progressBar = parent.TProgressbar(
 		Length(500),
 		Mode("determinate"),
-		Variable(s.progressVar),
+		s.progressVar,
 		Maximum(100),
 	)
 	Pack(s.progressBar, Pady("10"), Side("top"))
@@ -98,24 +98,31 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 
 // UpdateProgress updates the progress bar and status.
 func (s *ProgressScreen) UpdateProgress(percent float64, status string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.progressVar.Set(percent)
-	if status != "" {
-		s.statusLabel.Configure(Txt(status))
-	}
+	PostEvent(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.progressVar != nil {
+			s.progressVar.Set(percent)
+		}
+		if s.statusLabel != nil && status != "" {
+			s.statusLabel.Configure(Txt(status))
+		}
+	}, true)
 }
 
 // AddLogMessage adds a message to the log.
 func (s *ProgressScreen) AddLogMessage(msg string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.logText.Configure(State("normal"))
-	s.logText.Insert("end", msg+"\n")
-	s.logText.See("end")
-	s.logText.Configure(State("disabled"))
+	PostEvent(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.logText == nil {
+			return
+		}
+		s.logText.Configure(State("normal"))
+		s.logText.Insert("end", msg+"\n")
+		s.logText.See("end")
+		s.logText.Configure(State("disabled"))
+	}, false)
 }
 
 func (s *ProgressScreen) startInstallation() {

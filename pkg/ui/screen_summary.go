@@ -23,8 +23,15 @@ func NewSummaryScreen(step *core.StepConfig) ScreenRenderer {
 // Render creates the summary screen UI.
 func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
 	// Check installation status
-	isComplete, _ := ctx.Get("install.complete")
-	success := isComplete == true
+	isComplete, ok := ctx.Get("install.complete")
+	success := false
+	hasResult := false
+	if ok {
+		if value, ok := isComplete.(bool); ok {
+			success = value
+			hasResult = true
+		}
+	}
 	body := parent.TFrame()
 	Pack(body, Fill("both"), Expand(true))
 	row := 0
@@ -32,7 +39,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	// Title
 	titleText := s.step.Screen.Title
 	if titleText == "" {
-		if success {
+		if !hasResult && s.step.Title != "" {
+			titleText = s.step.Title
+		} else if success {
 			titleText = tr(ctx, "title.complete", "Installation Complete")
 		} else {
 			titleText = tr(ctx, "title.summary", "Installation Summary")
@@ -46,7 +55,9 @@ func (s *SummaryScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 
 	// Status icon/message
 	var statusText string
-	if success {
+	if !hasResult {
+		statusText = tr(ctx, "msg.ready", "Review the details before installing.")
+	} else if success {
 		statusText = tr(ctx, "msg.success", "✓ The installation completed successfully!")
 	} else {
 		statusText = tr(ctx, "msg.failure", "✗ The installation encountered errors.")
