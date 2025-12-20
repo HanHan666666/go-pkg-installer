@@ -223,3 +223,8 @@ func (s *ProgressScreen) Cleanup() {
 		s.taskRunner.Cancel()
 	}
 }
+
+// Type returns the screen type identifier.
+func (s *ProgressScreen) Type() string {
+	return "progress"
+}

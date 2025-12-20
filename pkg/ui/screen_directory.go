@@ -166,3 +166,8 @@ func (s *DirectoryScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the directory screen resources.
 func (s *DirectoryScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *DirectoryScreen) Type() string {
+	return "directory"
+}

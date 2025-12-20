@@ -62,6 +62,8 @@ type ScreenRenderer interface {
 	Collect(ctx *core.InstallContext) error
 	// Cleanup removes any screen-specific resources
 	Cleanup()
+	// Type returns the screen type identifier
+	Type() string
 }
 
 // ScreenRendererFactory creates a ScreenRenderer for a step configuration.
@@ -77,19 +79,32 @@ func NewInstallerWindow(ctx *core.InstallContext, workflow *core.Workflow, bus *
 	}
 
 	// Register built-in screen renderers
-	w.RegisterScreenRenderer("welcome", NewWelcomeScreen)
-	w.RegisterScreenRenderer("license", NewLicenseScreen)
-	w.RegisterScreenRenderer("directory", NewDirectoryScreen)
+	// Each screen type is registered automatically by creating a sample instance
+	// and reading its Type() method
+	w.autoRegister(NewWelcomeScreen)
+	w.autoRegister(NewLicenseScreen)
+	w.autoRegister(NewDirectoryScreen)
+	w.autoRegister(NewProgressScreen)
+	w.autoRegister(NewRichtextScreen)
+	w.autoRegister(NewSummaryScreen)
+	w.autoRegister(NewFormScreen)
+	w.autoRegister(NewOptionsScreen)
+
+	// Register aliases for convenience
 	w.RegisterScreenRenderer("pathPicker", NewDirectoryScreen)
-	w.RegisterScreenRenderer("progress", NewProgressScreen)
-	w.RegisterScreenRenderer("richtext", NewRichtextScreen)
-	w.RegisterScreenRenderer("summary", NewSummaryScreen)
-	w.RegisterScreenRenderer("form", NewFormScreen)
-	w.RegisterScreenRenderer("options", NewOptionsScreen)
 	w.RegisterScreenRenderer("installType", NewOptionsScreen)
 	w.RegisterScreenRenderer("finish", NewSummaryScreen)
 
 	return w
+}
+
+// autoRegister automatically registers a screen factory by creating a sample instance
+// and reading its Type() method.
+func (w *InstallerWindow) autoRegister(factory ScreenRendererFactory) {
+	// Create a sample instance with nil step to get the type
+	sample := factory(nil)
+	screenType := sample.Type()
+	w.screenRenderers[screenType] = factory
 }
 
 // RegisterScreenRenderer registers a screen renderer factory.
@@ -308,27 +323,29 @@ func (w *InstallerWindow) renderSidebar() {
 	spacer := w.sidebarFrame.TFrame(Style("Sidebar.TFrame"))
 	Pack(spacer, Fill("both"), Expand(true))
 
-	logoPath := resolveAssetPath(w.ctx, w.ctx.RenderOrDefault("product.logo", ""))
-	if logoPath != "" {
-		if w.logoImage == nil || w.logoPath != logoPath {
-			w.logoImage = loadLogoImage(logoPath)
-			if w.logoImage != nil {
-				w.logoPath = logoPath
-			} else {
-				w.logoPath = ""
-			}
-		}
+	logoKey := logoKeyFromContext(w.ctx)
+	if logoKey == "" {
+		w.logoImage = nil
+		w.logoPath = ""
+	} else if w.logoImage == nil || w.logoPath != logoKey {
+		w.logoImage = loadLogoForKey(w.ctx, logoKey)
 		if w.logoImage != nil {
-			logoCanvas := w.sidebarFrame.Canvas(
-				Width(sidebarLogoSize),
-				Height(sidebarLogoSize),
-				Background(currentPalette.sidebar),
-				Borderwidth(0),
-				Highlightthickness(0),
-			)
-			Pack(logoCanvas, Side("bottom"), Pady("6"))
-			logoCanvas.CreateImage(sidebarLogoSize/2, sidebarLogoSize/2, Image(w.logoImage), Anchor("center"))
+			w.logoPath = logoKey
+		} else {
+			w.logoPath = ""
 		}
+	}
+
+	if w.logoImage != nil {
+		logoCanvas := w.sidebarFrame.Canvas(
+			Width(sidebarLogoSize),
+			Height(sidebarLogoSize),
+			Background(currentPalette.sidebar),
+			Borderwidth(0),
+			Highlightthickness(0),
+		)
+		Pack(logoCanvas, Side("bottom"), Pady("6"))
+		logoCanvas.CreateImage(sidebarLogoSize/2, sidebarLogoSize/2, Image(w.logoImage), Anchor("center"))
 	}
 }
 

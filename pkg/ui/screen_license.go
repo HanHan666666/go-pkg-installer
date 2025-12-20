@@ -182,3 +182,8 @@ func scrollReachedEnd(yview string) bool {
 	}
 	return last >= 0.999
 }
+
+// Type returns the screen type identifier.
+func (s *LicenseScreen) Type() string {
+	return "license"
+}

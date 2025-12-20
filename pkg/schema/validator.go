@@ -209,8 +209,15 @@ type Option = core.Option
 // Deprecated: Use core.BranchConfig instead.
 type BranchConfig = core.BranchConfig
 
-// LoadConfig loads and validates an installer configuration from YAML.
-func LoadConfig(yamlContent []byte) (*core.Config, error) {
+// ConfigLoader is an interface for loading and validating configurations
+type ConfigLoader interface {
+	Load(yamlContent []byte) (*core.Config, error)
+}
+
+// SchemaValidatorLoader loads configs with schema validation
+type SchemaValidatorLoader struct{}
+
+func (l *SchemaValidatorLoader) Load(yamlContent []byte) (*core.Config, error) {
 	validator, err := NewValidator()
 	if err != nil {
 		// Skip validation if embedded schema fails
@@ -232,4 +239,15 @@ func LoadConfig(yamlContent []byte) (*core.Config, error) {
 	}
 
 	return &config, nil
+}
+
+// LoadConfig loads and validates an installer configuration from YAML.
+func LoadConfig(yamlContent []byte) (*core.Config, error) {
+	loader := &SchemaValidatorLoader{}
+	return loader.Load(yamlContent)
+}
+
+// LoadConfigFromString loads and validates an installer configuration from a YAML string.
+func LoadConfigFromString(yamlStr string) (*core.Config, error) {
+	return LoadConfig([]byte(yamlStr))
 }

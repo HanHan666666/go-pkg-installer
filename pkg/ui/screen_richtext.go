@@ -94,3 +94,8 @@ func (s *RichtextScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the richtext screen resources.
 func (s *RichtextScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *RichtextScreen) Type() string {
+	return "richtext"
+}

@@ -188,3 +188,8 @@ func (s *SummaryScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the summary screen resources.
 func (s *SummaryScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *SummaryScreen) Type() string {
+	return "summary"
+}

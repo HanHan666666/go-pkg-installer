@@ -23,7 +23,7 @@ func NewWelcomeScreen(step *core.StepConfig) ScreenRenderer {
 func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, bus *core.EventBus) error {
 	// Get product info
 	productName := ctx.RenderOrDefault("product.name", "Application")
-	version := ctx.RenderOrDefault("product.version", "")
+	// version := ctx.RenderOrDefault("product.version", "")
 
 	// Title
 	titleText := s.step.Screen.Title
@@ -35,18 +35,18 @@ func (s *WelcomeScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, b
 	title := parent.TLabel(Txt(titleText), Font("TkHeadingFont"))
 	Pack(title, Pady("20"), Side("top"))
 
-	// Description
-	description := s.step.Screen.Description
-	if description == "" {
-		description = fmt.Sprintf("This will install %s on your computer.", productName)
-		if version != "" {
-			description = fmt.Sprintf("This will install %s version %s on your computer.", productName, version)
-		}
-	}
-	description = ctx.Render(description)
+	// // Description
+	// description := s.step.Screen.Description
+	// if description == "" {
+	// 	description = fmt.Sprintf("This will install %s on your computer.", productName)
+	// 	if version != "" {
+	// 		description = fmt.Sprintf("This will install %s version %s on your computer.", productName, version)
+	// 	}
+	// }
+	// description = ctx.Render(description)
 
-	descLabel := parent.TLabel(Txt(description), Wraplength("600"))
-	Pack(descLabel, Pady("10"), Side("top"))
+	// descLabel := parent.TLabel(Txt(description), Wraplength("600"))
+	// Pack(descLabel, Pady("10"), Side("top"))
 
 	// Optional content block
 	content := ""
@@ -94,3 +94,8 @@ func (s *WelcomeScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the welcome screen resources.
 func (s *WelcomeScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *WelcomeScreen) Type() string {
+	return "welcome"
+}

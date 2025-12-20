@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -14,6 +15,30 @@ import (
 
 	"github.com/HanHan666666/go-pkg-installer/pkg/core"
 )
+
+func logoKeyFromContext(ctx *core.InstallContext) string {
+	if ctx == nil {
+		return ""
+	}
+	if data := embeddedLogoBytes(ctx); len(data) > 0 {
+		return "embedded"
+	}
+	path := resolveAssetPath(ctx, ctx.RenderOrDefault("product.logo", ""))
+	if strings.TrimSpace(path) == "" {
+		return ""
+	}
+	return path
+}
+
+func loadLogoForKey(ctx *core.InstallContext, key string) *Img {
+	if key == "" {
+		return nil
+	}
+	if key == "embedded" {
+		return loadLogoImageFromData(embeddedLogoBytes(ctx))
+	}
+	return loadLogoImage(key)
+}
 
 func resolveAssetPath(ctx *core.InstallContext, logoPath string) string {
 	path := strings.TrimSpace(logoPath)
@@ -55,6 +80,62 @@ func loadLogoImage(path string) *Img {
 		img = NewPhoto(File(path))
 	}()
 	return img
+}
+
+func embeddedLogoBytes(ctx *core.InstallContext) []byte {
+	if ctx == nil {
+		return nil
+	}
+	embedData, ok := ctx.Get("product.logo.bytes")
+	if !ok {
+		return nil
+	}
+	data, ok := embedData.([]byte)
+	if !ok || len(data) == 0 {
+		return nil
+	}
+	return data
+}
+
+// loadLogoImageFromData loads a logo image from byte data
+func loadLogoImageFromData(data []byte) *Img {
+	if len(data) == 0 {
+		return nil
+	}
+	var img *Img
+	func() {
+		defer func() {
+			if recover() != nil {
+				img = nil
+			}
+		}()
+		if scaled := loadScaledLogoFromData(data, sidebarLogoSize); scaled != nil {
+			img = scaled
+			return
+		}
+		img = NewPhoto(Data(data))
+	}()
+	return img
+}
+
+// loadScaledLogoFromData loads and scales a logo from byte data
+func loadScaledLogoFromData(data []byte, target int) *Img {
+	if target <= 0 || len(data) == 0 {
+		return nil
+	}
+
+	reader := bytes.NewReader(data)
+	src, _, err := image.Decode(reader)
+	if err != nil {
+		return nil
+	}
+
+	scaled := scaleToFit(src, target)
+	if scaled == nil {
+		return nil
+	}
+
+	return NewPhoto(Data(scaled))
 }
 
 func loadScaledLogo(path string, target int) *Img {

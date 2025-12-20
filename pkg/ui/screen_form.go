@@ -275,3 +275,8 @@ func (s *FormScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the form screen resources.
 func (s *FormScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *FormScreen) Type() string {
+	return "form"
+}

@@ -92,3 +92,8 @@ func (s *OptionsScreen) Collect(ctx *core.InstallContext) error {
 
 // Cleanup cleans up the options screen resources.
 func (s *OptionsScreen) Cleanup() {}
+
+// Type returns the screen type identifier.
+func (s *OptionsScreen) Type() string {
+	return "options"
+}
