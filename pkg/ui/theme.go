@@ -39,14 +39,12 @@ var (
 func applyTheme(ctx *core.InstallContext) {
 	themeOnce.Do(func() {
 		currentPalette = buildPalette(ctx)
-		if err := ActivateTheme("Azure light"); err == nil {
-			useAzureTheme = true
-		} else if err := ActivateTheme("azure light"); err == nil {
+		if safeActivateTheme("Azure light") || safeActivateTheme("azure light") {
 			useAzureTheme = true
 		}
-		applyFonts()
-		applyStyles(currentPalette)
-		App.Configure(Background(currentPalette.appBg))
+		safeApplyFonts()
+		safeApplyStyles(currentPalette)
+		safeConfigureBackground(currentPalette.appBg)
 	})
 }
 
@@ -132,7 +130,7 @@ func pickFontFamily() string {
 		"DejaVu Sans",
 	}
 
-	available := FontFamilies()
+	available := safeFontFamilies()
 	if len(available) == 0 {
 		return ""
 	}
@@ -147,6 +145,48 @@ func pickFontFamily() string {
 		}
 	}
 	return ""
+}
+
+func safeActivateTheme(name string) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	if err := ActivateTheme(name); err != nil {
+		return false
+	}
+	return true
+}
+
+func safeApplyFonts() {
+	defer func() {
+		_ = recover()
+	}()
+	applyFonts()
+}
+
+func safeApplyStyles(p uiPalette) {
+	defer func() {
+		_ = recover()
+	}()
+	applyStyles(p)
+}
+
+func safeConfigureBackground(color string) {
+	defer func() {
+		_ = recover()
+	}()
+	App.Configure(Background(color))
+}
+
+func safeFontFamilies() (families []string) {
+	defer func() {
+		if recover() != nil {
+			families = nil
+		}
+	}()
+	return FontFamilies()
 }
 
 func applyStyles(p uiPalette) {
