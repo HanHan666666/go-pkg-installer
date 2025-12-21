@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -162,7 +163,7 @@ func (s *ProgressScreen) startInstallation() {
 		s.ctx.Set("install.complete", true)
 		s.ctx.Set("install.failed", false)
 		s.ctx.Set("step.failed", false)
-		s.ctx.Set("step.failed.id", "")
+		s.ctx.Set("step.failed_id", "")
 		return
 	}
 
@@ -208,7 +209,7 @@ func (s *ProgressScreen) startInstallation() {
 			s.UpdateProgress(0, tr(s.ctx, "status.failed", "Installation Failed"))
 			s.isComplete = true
 			s.ctx.Set("step.failed", true)
-			s.ctx.Set("step.failed.id", s.step.ID)
+			s.ctx.Set("step.failed_id", s.step.ID)
 			if s.bus != nil {
 				s.bus.PublishStepFailure(s.step.ID)
 			}
@@ -219,7 +220,7 @@ func (s *ProgressScreen) startInstallation() {
 			s.AddLogMessage("\n" + tr(s.ctx, "msg.success", "Installation completed successfully!"))
 			s.isComplete = true
 			s.ctx.Set("step.failed", false)
-			s.ctx.Set("step.failed.id", "")
+			s.ctx.Set("step.failed_id", "")
 		}
 	}()
 }
@@ -227,7 +228,7 @@ func (s *ProgressScreen) startInstallation() {
 // Validate validates the progress screen (checks if complete).
 func (s *ProgressScreen) Validate() error {
 	if !s.isComplete {
-		return fmt.Errorf(tr(s.ctx, "msg.install.in_progress", "Installation is still in progress"))
+		return errors.New(tr(s.ctx, "msg.install.in_progress", "Installation is still in progress"))
 	}
 	return nil
 }

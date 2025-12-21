@@ -130,9 +130,29 @@ flows:
 | `license` | 许可协议（滚动到末尾/勾选） |
 | `pathPicker` | 安装目录选择 |
 | `options` | 选项配置 |
+| `detect` | 进入即执行任务，展示简洁检测结果 |
 | `summary` | 安装前摘要 |
 | `progress` | 进度与日志 |
 | `finish` | 完成页 |
+
+### Detect 页面
+
+`detect` 页面会在进入时自动执行当前步骤的 `tasks`。任务执行期间展示 `description`（检测中提示），完成后渲染 `content`，支持上下文变量替换。
+
+```yaml
+- id: detect
+  title: "Check System"
+  screen:
+    type: detect
+    title: "Check System"
+    description: "Detecting environment..."
+    content: |
+      Detected info: ${env.some_field}
+      Please confirm and continue.
+  tasks:
+    - type: go:someTask
+      param: "value"
+```
 
 ### 内置 Task 类型
 

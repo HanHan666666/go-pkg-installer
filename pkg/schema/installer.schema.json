@@ -396,6 +396,31 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "type",
+            "content"
+          ],
+          "properties": {
+            "type": {
+              "const": "detect"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
             "type"
           ],
           "properties": {

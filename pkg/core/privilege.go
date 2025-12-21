@@ -105,7 +105,25 @@ func taskRequiresPrivilege(task TaskConfig) bool {
 
 	switch StripGoPrefix(task.Type) {
 	case "systemdService", "dbusService", "permission":
+		if StripGoPrefix(task.Type) != "permission" && isUserScope(task.Params) {
+			return false
+		}
 		return true
+	default:
+		return false
+	}
+}
+
+func isUserScope(params map[string]any) bool {
+	val, ok := params["user"]
+	if !ok {
+		return false
+	}
+	switch v := val.(type) {
+	case bool:
+		return v
+	case string:
+		return strings.EqualFold(v, "true") || v == "1"
 	default:
 		return false
 	}

@@ -46,6 +46,7 @@ func TestInstallerWindowScreenRenderers(t *testing.T) {
 		"license",
 		"directory",
 		"pathPicker",
+		"detect",
 		"progress",
 		"richtext",
 		"summary",

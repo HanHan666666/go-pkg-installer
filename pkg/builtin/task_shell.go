@@ -2,12 +2,16 @@
 package builtin
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/HanHan666666/go-pkg-installer/pkg/core"
@@ -102,11 +106,13 @@ func (t *ShellTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error 
 
 	// Build command
 	var cmd *exec.Cmd
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 	if len(t.Args) > 0 {
-		cmd = exec.Command(t.Command, t.Args...)
+		cmd = exec.CommandContext(ctxTimeout, t.Command, t.Args...)
 	} else {
 		// Use shell to execute the command
-		cmd = exec.Command("sh", "-c", t.Command)
+		cmd = exec.CommandContext(ctxTimeout, "sh", "-c", t.Command)
 	}
 
 	// Set working directory
@@ -122,33 +128,34 @@ func (t *ShellTask) Execute(ctx *core.InstallContext, bus *core.EventBus) error 
 		}
 	}
 
-	// Capture output
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Run with timeout
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Run()
-	}()
-
-	select {
-	case err := <-done:
-		if err != nil {
-			ctx.AddLog(core.LogError, fmt.Sprintf("Command failed: %v\nstderr: %s", err, stderr.String()))
-			return fmt.Errorf("command failed: %w\nstderr: %s", err, stderr.String())
-		}
-	case <-time.After(timeout):
-		if cmd.Process != nil {
-			cmd.Process.Kill()
-		}
-		return fmt.Errorf("command timed out after %v", timeout)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("shell: failed to capture stdout: %w", err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("shell: failed to capture stderr: %w", err)
 	}
 
-	// Log output
-	if stdout.Len() > 0 {
-		ctx.AddLog(core.LogInfo, fmt.Sprintf("stdout: %s", stdout.String()))
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("shell: failed to start command: %w", err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go streamOutput(ctx, stdoutPipe, core.LogInfo, "", &wg)
+	go streamOutput(ctx, stderrPipe, core.LogError, "", &wg)
+
+	err = cmd.Wait()
+	wg.Wait()
+
+	if ctxTimeout.Err() == context.DeadlineExceeded {
+		ctx.AddLog(core.LogError, fmt.Sprintf("Command timed out after %v", timeout))
+		return fmt.Errorf("command timed out after %v", timeout)
+	}
+	if err != nil {
+		ctx.AddLog(core.LogError, fmt.Sprintf("Command failed: %v", err))
+		return fmt.Errorf("command failed: %w", err)
 	}
 
 	return nil
@@ -188,4 +195,28 @@ func (t *ShellTask) Rollback(ctx *core.InstallContext, bus *core.EventBus) error
 	}
 
 	return nil
+}
+
+func streamOutput(ctx *core.InstallContext, reader io.Reader, level core.LogLevel, label string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	scanner := bufio.NewScanner(reader)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		line := strings.TrimRight(scanner.Text(), "\r")
+		if line == "" {
+			continue
+		}
+		if label != "" {
+			ctx.AddLog(level, fmt.Sprintf("%s: %s", label, line))
+		} else {
+			ctx.AddLog(level, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		ctx.AddLog(core.LogWarn, fmt.Sprintf("stream read error (%s): %v", label, err))
+	}
 }

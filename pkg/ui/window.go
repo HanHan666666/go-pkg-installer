@@ -85,6 +85,7 @@ func NewInstallerWindow(ctx *core.InstallContext, workflow *core.Workflow, bus *
 	w.autoRegister(NewLicenseScreen)
 	w.autoRegister(NewDirectoryScreen)
 	w.autoRegister(NewProgressScreen)
+	w.autoRegister(NewDetectScreen)
 	w.autoRegister(NewRichtextScreen)
 	w.autoRegister(NewSummaryScreen)
 	w.autoRegister(NewFormScreen)

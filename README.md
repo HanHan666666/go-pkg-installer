@@ -129,9 +129,29 @@ flows:
 | `license` | License with scroll-to-end and accept checkbox |
 | `pathPicker` | Directory selection for install location |
 | `options` | Multiple-choice options |
+| `detect` | Run step tasks on entry and show concise status text |
 | `summary` | Pre-install summary |
 | `progress` | Progress and live logs |
 | `finish` | Completion screen |
+
+### Detect screen
+
+The `detect` screen runs the current step’s `tasks` as soon as the page is shown. While tasks run, it displays a short “detecting” message (from `description`). After tasks finish, it renders the final `content` using context variables.
+
+```yaml
+- id: detect
+  title: "Check System"
+  screen:
+    type: detect
+    title: "Check System"
+    description: "Detecting environment..."
+    content: |
+      Detected info: ${env.some_field}
+      Please confirm and continue.
+  tasks:
+    - type: go:someTask
+      param: "value"
+```
 
 ### Built-in tasks
 

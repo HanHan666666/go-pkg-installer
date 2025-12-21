@@ -130,6 +130,52 @@ flows:
 	}
 }
 
+func TestValidateYAMLDetectScreen(t *testing.T) {
+	v, _ := NewValidator()
+
+	validYAML := `
+product:
+  name: "Test App"
+flows:
+  install:
+    entry: "detect"
+    steps:
+      - id: "detect"
+        title: "Detect"
+        screen:
+          type: "detect"
+          title: "Check System"
+          description: "Detecting environment..."
+          content: "Detected info: ${env.arch}"
+        tasks:
+          - type: "shell"
+            command: "echo"
+            args: ["ok"]
+`
+	result := v.ValidateYAML([]byte(validYAML))
+	if !result.Valid {
+		t.Errorf("Should be valid, errors: %v", result.Errors)
+	}
+
+	invalidYAML := `
+product:
+  name: "Test App"
+flows:
+  install:
+    entry: "detect"
+    steps:
+      - id: "detect"
+        title: "Detect"
+        screen:
+          type: "detect"
+          description: "Detecting environment..."
+`
+	result = v.ValidateYAML([]byte(invalidYAML))
+	if result.Valid {
+		t.Error("Should be invalid - detect.content is required")
+	}
+}
+
 func TestValidateYAMLWithBranching(t *testing.T) {
 	v, _ := NewValidator()
 
