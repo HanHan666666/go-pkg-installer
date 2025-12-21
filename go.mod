@@ -54,3 +54,11 @@ require (
 	modernc.org/tcl9.0 v0.16.23 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
+
+// Pin tk9.0 runtime deps to the versions bundled with tk9.0 v1.73.0.
+replace (
+	github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.4
+	modernc.org/libtcl9.0 => modernc.org/libtcl9.0 v0.16.15
+	modernc.org/libtk9.0 => modernc.org/libtk9.0 v0.16.11
+	modernc.org/tcl9.0 => modernc.org/tcl9.0 v0.16.23
+)
