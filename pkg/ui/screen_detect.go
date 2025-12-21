@@ -166,7 +166,7 @@ func (s *DetectScreen) setDescription(text string) {
 		return
 	}
 
-	PostEvent(func() {
+	postUIEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if !s.active || s.descriptionLabel == nil {
@@ -187,7 +187,7 @@ func (s *DetectScreen) setContent(text string) {
 		return
 	}
 
-	PostEvent(func() {
+	postUIEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if !s.active || s.contentLabel == nil {

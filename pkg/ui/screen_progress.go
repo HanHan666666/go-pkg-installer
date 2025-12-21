@@ -101,7 +101,7 @@ func (s *ProgressScreen) Render(parent *TFrameWidget, ctx *core.InstallContext, 
 
 // UpdateProgress updates the progress bar and status.
 func (s *ProgressScreen) UpdateProgress(percent float64, status string) {
-	PostEvent(func() {
+	postUIEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if !s.active {
@@ -118,7 +118,7 @@ func (s *ProgressScreen) UpdateProgress(percent float64, status string) {
 
 // AddLogMessage adds a message to the log.
 func (s *ProgressScreen) AddLogMessage(msg string) {
-	PostEvent(func() {
+	postUIEvent(func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if !s.active {
