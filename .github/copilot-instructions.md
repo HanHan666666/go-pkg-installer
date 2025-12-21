@@ -45,6 +45,7 @@
 - 内置能力注册：`pkg/builtin/builtin.go` 与 `pkg/builtin/task_*.go`。
 - GUI 适配层：`pkg/ui/window.go` + `pkg/ui/screen_*.go`（TK9；goroutine 更新 UI 通过 `PostEvent`）。
 - 配置示例：`examples/demo-installer.yaml`。
+- UI 库使用文档：`docs/tk9_doc`
 
 ## 开发者工作流（直接用这些命令）
 - 构建：`make build`（生成 `build/installer`）。
