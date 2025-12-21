@@ -7,7 +7,7 @@ toolchain go1.24.11
 require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/tk9.0 v0.55.3
+	modernc.org/tk9.0 v1.73.0
 )
 
 require (
@@ -18,7 +18,6 @@ require (
 	github.com/evilsocket/islazy v1.11.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/mat/besticon/v3 v3.18.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -56,10 +55,10 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-// Pin tk9.0 runtime deps to the versions bundled with tk9.0 v0.55.3.
+// Pin tk9.0 runtime deps to the versions bundled with tk9.0 v1.73.0.
 replace (
-	github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.0
-	modernc.org/libtcl9.0 => modernc.org/libtcl9.0 v0.14.0
-	modernc.org/libtk9.0 => modernc.org/libtk9.0 v0.13.0
-	modernc.org/tcl9.0 => modernc.org/tcl9.0 v0.15.0
+	github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.4
+	modernc.org/libtcl9.0 => modernc.org/libtcl9.0 v0.16.15
+	modernc.org/libtk9.0 => modernc.org/libtk9.0 v0.16.11
+	modernc.org/tcl9.0 => modernc.org/tcl9.0 v0.16.23
 )

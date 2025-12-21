@@ -22,12 +22,10 @@ type InstallerWindow struct {
 	workflow *core.Workflow
 
 	// UI state
-	mainFrame      *TFrameWidget
-	sidebarFrame   *TFrameWidget
-	sidebarContent *TFrameWidget
-	contentHost    *TFrameWidget
-	contentFrame   *TFrameWidget
-	navFrame       *TFrameWidget
+	mainFrame    *TFrameWidget
+	sidebarFrame *TFrameWidget
+	contentFrame *TFrameWidget
+	navFrame     *TFrameWidget
 
 	// Navigation buttons
 	backBtn   *TButtonWidget
@@ -43,9 +41,6 @@ type InstallerWindow struct {
 	// Sidebar logo
 	logoImage *Img
 	logoPath  string
-
-	doneCh   chan struct{}
-	doneOnce sync.Once
 
 	// Callbacks
 	onComplete func()
@@ -129,13 +124,7 @@ func (w *InstallerWindow) OnCancel(fn func()) {
 }
 
 // Run initializes and runs the installer UI.
-func (w *InstallerWindow) Run() (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("ui panic: %v", r)
-		}
-	}()
-
+func (w *InstallerWindow) Run() error {
 	// Lock to OS thread for tk9
 	runtime.LockOSThread()
 
@@ -148,23 +137,8 @@ func (w *InstallerWindow) Run() (err error) {
 	// Render the first screen
 	w.renderCurrentStep()
 
-	w.doneCh = make(chan struct{})
-	WmProtocol(App, "WM_DELETE_WINDOW", func() {
-		w.handleCancel()
-	})
-
 	// Start the main loop
-	for {
-		select {
-		case <-w.doneCh:
-			return nil
-		default:
-		}
-
-		drainUIEvents(64)
-		Update()
-		time.Sleep(10 * time.Millisecond)
-	}
+	App.Wait()
 
 	return nil
 }
@@ -195,17 +169,15 @@ func (w *InstallerWindow) setupWindow() {
 	contentWrapper := w.mainFrame.TFrame(Style("Content.TFrame"))
 	Pack(contentWrapper, Side("right"), Fill("both"), Expand(true))
 
-	// Create content host/frame (for screen content)
-	w.contentHost = contentWrapper.TFrame(Style("Content.TFrame"))
-	w.contentFrame = w.contentHost.TFrame(Padding("12"), Style("Content.TFrame"))
+	// Create content frame (for screen content)
+	w.contentFrame = contentWrapper.TFrame(Padding("12"), Style("Content.TFrame"))
 
 	// Create separator
 	separator := contentWrapper.TSeparator()
 
 	// Create navigation frame
 	w.navFrame = contentWrapper.TFrame(Style("Nav.TFrame"))
-	Grid(w.contentHost, Row(0), Column(0), Sticky("nsew"))
-	Pack(w.contentFrame, Fill("both"), Expand(true))
+	Grid(w.contentFrame, Row(0), Column(0), Sticky("nsew"))
 	Grid(separator, Row(1), Column(0), Sticky("ew"), Pady("8"))
 	Grid(w.navFrame, Row(2), Column(0), Sticky("ew"))
 	GridRowConfigure(contentWrapper, 0, Weight(1))
@@ -257,7 +229,7 @@ func (w *InstallerWindow) subscribeEvents() {
 
 	// Subscribe to step failure events
 	w.bus.Subscribe(core.EventStepFailure, func(e core.Event) {
-		postUIEvent(func() {
+		PostEvent(func() {
 			w.updateNavButtons()
 		}, true)
 	})
@@ -272,11 +244,11 @@ func (w *InstallerWindow) renderCurrentStep() {
 		w.currentScreen.Cleanup()
 	}
 
-	if w.contentFrame != nil {
-		Destroy(w.contentFrame)
+	// Clear content frame by destroying children
+	children := WinfoChildren(w.contentFrame.Window)
+	for _, child := range children {
+		Destroy(child)
 	}
-	w.contentFrame = w.contentHost.TFrame(Padding("12"), Style("Content.TFrame"))
-	Pack(w.contentFrame, Fill("both"), Expand(true))
 
 	// Get current step
 	step := w.workflow.CurrentStep()
@@ -317,14 +289,13 @@ func (w *InstallerWindow) renderSidebar() {
 		return
 	}
 
-	if w.sidebarContent != nil {
-		Destroy(w.sidebarContent)
+	children := WinfoChildren(w.sidebarFrame.Window)
+	for _, child := range children {
+		Destroy(child)
 	}
-	w.sidebarContent = w.sidebarFrame.TFrame(Style("Sidebar.TFrame"))
-	Pack(w.sidebarContent, Fill("both"), Expand(true))
 
 	productName := w.ctx.RenderOrDefault("product.name", "Installer")
-	title := w.sidebarContent.TLabel(
+	title := w.sidebarFrame.TLabel(
 		Txt(productName),
 		Font("TkHeadingFont"),
 		Anchor("w"),
@@ -349,7 +320,7 @@ func (w *InstallerWindow) renderSidebar() {
 			style = "SidebarDisabled.TLabel"
 		}
 		text := fmt.Sprintf("%s %s", prefix, step.Title)
-		label := w.sidebarContent.TLabel(
+		label := w.sidebarFrame.TLabel(
 			Txt(text),
 			Anchor("w"),
 			Wraplength("160"),
@@ -358,7 +329,7 @@ func (w *InstallerWindow) renderSidebar() {
 		Pack(label, Side("top"), Fill("x"), Padx("5"), Pady("2"))
 	}
 
-	spacer := w.sidebarContent.TFrame(Style("Sidebar.TFrame"))
+	spacer := w.sidebarFrame.TFrame(Style("Sidebar.TFrame"))
 	Pack(spacer, Fill("both"), Expand(true))
 
 	logoKey := logoKeyFromContext(w.ctx)
@@ -375,13 +346,15 @@ func (w *InstallerWindow) renderSidebar() {
 	}
 
 	if w.logoImage != nil {
-		logoLabel := w.sidebarContent.TLabel(
-			Image(w.logoImage),
+		logoCanvas := w.sidebarFrame.Canvas(
 			Width(sidebarLogoSize),
-			Anchor("center"),
+			Height(sidebarLogoSize),
 			Background(currentPalette.sidebar),
+			Borderwidth(0),
+			Highlightthickness(0),
 		)
-		Pack(logoLabel, Side("bottom"), Pady("6"))
+		Pack(logoCanvas, Side("bottom"), Pady("6"))
+		logoCanvas.CreateImage(sidebarLogoSize/2, sidebarLogoSize/2, Image(w.logoImage), Anchor("center"))
 	}
 }
 
@@ -450,7 +423,6 @@ func (w *InstallerWindow) handleNext() {
 
 	// Validate current screen
 	if step != nil && isAnyStepFailed(w.ctx) {
-		w.signalDone()
 		Destroy(App)
 		os.Exit(1)
 		return
@@ -474,7 +446,6 @@ func (w *InstallerWindow) handleNext() {
 		if w.onComplete != nil {
 			w.onComplete()
 		}
-		w.signalDone()
 		Destroy(App)
 		return
 	}
@@ -524,18 +495,9 @@ func (w *InstallerWindow) handleCancel() {
 		if w.onCancel != nil {
 			w.onCancel()
 		}
-		w.signalDone()
 		Destroy(App)
 		os.Exit(0)
 	}
-}
-
-func (w *InstallerWindow) signalDone() {
-	w.doneOnce.Do(func() {
-		if w.doneCh != nil {
-			close(w.doneCh)
-		}
-	})
 }
 
 func (w *InstallerWindow) nextEnabledStep(currentID string) *core.Step {
