@@ -7,6 +7,7 @@ toolchain go1.24.11
 require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	gopkg.in/yaml.v3 v3.0.1
+	modernc.org/tk9.0 v1.73.0
 )
 
 require (
@@ -51,6 +52,5 @@ require (
 	modernc.org/sortutil v1.2.1 // indirect
 	modernc.org/strutil v1.2.1 // indirect
 	modernc.org/tcl9.0 v0.16.23 // indirect
-	modernc.org/tk9.0 v1.73.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
