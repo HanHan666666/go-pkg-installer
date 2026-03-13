@@ -212,6 +212,33 @@ flows:
 	}
 }
 
+func TestValidateYAMLWithAllowBack(t *testing.T) {
+	v, _ := NewValidator()
+
+	validYAML := `
+product:
+  name: "Test App"
+flows:
+  install:
+    entry: "welcome"
+    steps:
+      - id: "welcome"
+        title: "Welcome"
+        screen:
+          type: "welcome"
+          content: "Welcome!"
+      - id: "install"
+        title: "Install"
+        allowBack: false
+        screen:
+          type: "progress"
+`
+	result := v.ValidateYAML([]byte(validYAML))
+	if !result.Valid {
+		t.Errorf("Should accept allowBack, errors: %v", result.Errors)
+	}
+}
+
 func TestValidateYAMLWithMeta(t *testing.T) {
 	v, _ := NewValidator()
 

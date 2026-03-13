@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+func boolPtr(v bool) *bool {
+	return &v
+}
+
 func createTestFlow() *Flow {
 	return &Flow{
 		ID:    "install",
@@ -172,6 +176,46 @@ func TestWorkflowAtBoundaries(t *testing.T) {
 	_, err = w.Next()
 	if err == nil {
 		t.Error("Next should error at last step")
+	}
+}
+
+func TestWorkflowCanGoBackRespectsAllowBack(t *testing.T) {
+	w := NewWorkflow(NewInstallContext(), NewEventBus())
+	flow := createTestFlow()
+	// Explicit false must override the historical "not first step means back is ok"
+	// behavior so installers can lock irreversible steps such as install/finish.
+	flow.Steps[3].AllowBack = boolPtr(false)
+	w.AddFlow(flow)
+	w.SelectFlow("install")
+
+	for i := 0; i < 3; i++ {
+		if _, err := w.Next(); err != nil {
+			t.Fatalf("Next should reach locked step: %v", err)
+		}
+	}
+
+	if w.CurrentStepID() != "install" {
+		t.Fatalf("expected install step, got %s", w.CurrentStepID())
+	}
+
+	if w.CanGoBack() {
+		t.Fatal("locked step should disable backward navigation")
+	}
+
+	if _, err := w.Prev(); err == nil || err.Error() != "back navigation is disabled" {
+		t.Fatalf("Prev should report locked navigation, got %v", err)
+	}
+}
+
+func TestStepAllowsBackFallsBackToConfig(t *testing.T) {
+	step := &Step{
+		Config: &StepConfig{
+			AllowBack: boolPtr(false),
+		},
+	}
+
+	if step.AllowsBack() {
+		t.Fatal("step should honor allowBack from StepConfig when runtime field is unset")
 	}
 }
 
